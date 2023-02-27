@@ -56,7 +56,7 @@ const heartbeatCheck = () => {
     } catch (error) {
       handleWSError();
     }
-  }, 5000);
+  }, 30000);
 };
 const onMessage = () => {
   if (ws.value) {
