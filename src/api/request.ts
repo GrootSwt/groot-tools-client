@@ -23,6 +23,9 @@ function handleResponseError(error: AxiosError) {
         ElMessage.error(data.message)
         toLoginPage()
         break;
+      case 500: 
+        ElMessage.error("服务器连接失败")
+        break;
       default:
         ElMessage.error(data.message)
         break;
