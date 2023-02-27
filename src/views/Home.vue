@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { CopyDocument } from "@element-plus/icons-vue";
-import { onMounted, ref } from "vue";
+import { nextTick, onMounted, ref } from "vue";
 import {
   IMessage,
   listMessageByUserId,
@@ -11,6 +11,18 @@ import { copyToClipboard } from "../assets/tools/commonFunction";
 import env from "../assets/env";
 import { ElMessage } from "element-plus";
 
+const chatContentRef = ref<HTMLDivElement>();
+const inputRef = ref<HTMLInputElement>();
+
+
+const chatContentScrollBottom = () => {
+  nextTick(() => {
+    const chatContentEl = chatContentRef.value
+    if (chatContentEl) {
+      chatContentEl.scrollTop = chatContentEl.scrollHeight - chatContentEl.clientHeight
+    }
+  })
+}
 const disabledSendMessage = ref(true);
 
 const ws = ref<WebSocket>();
@@ -34,14 +46,16 @@ const connectWebSocket = () => {
 };
 
 const sendMessage = () => {
-  if (message.value) {
+  if (message.value.trim()) {
     const data = {
-      message: message.value,
+      message: message.value.trim(),
       messageType: messageType.value,
     };
     messageList.value.push(data);
     ws.value?.send(JSON.stringify(data));
     message.value = "";
+    chatContentScrollBottom()
+    inputRef.value?.focus()
   }
 };
 
@@ -51,6 +65,7 @@ const getMessageList = (userId: string) => {
     .then((res) => {
       if (res.data) {
         messageList.value = res.data;
+        chatContentScrollBottom()
       }
       connectWebSocket();
     })
@@ -77,7 +92,7 @@ const toggleMessageType = () => {
 <template>
   <div class="chat-container">
     <div class="chat-box">
-      <main class="chat-main">
+      <main ref="chatContentRef" class="chat-main">
         <p class="message-box" v-for="item in messageList" :key="item.id">
           <span v-if="item.messageType === MessageTypeEnum.text">
             {{ item.message }}
@@ -99,10 +114,13 @@ const toggleMessageType = () => {
       </main>
       <footer class="chat-footer">
         <el-input
+          ref="inputRef"
+          placeholder="点击ctrl+enter发送消息"
           :disabled="disabledSendMessage"
           v-model="message"
           :rows="3"
           type="textarea"
+          @keyup.ctrl.enter="sendMessage()"
         />
         <div class="operation">
           <div class="split-line"></div>
@@ -137,9 +155,6 @@ const toggleMessageType = () => {
     display: flex;
     flex-direction: column;
     border: 1px solid gray;
-    @media screen and (max-width: 499px) {
-      border: none;
-    }
   }
   .chat-main {
     flex: 1;
@@ -175,8 +190,8 @@ const toggleMessageType = () => {
       .split-line {
         position: absolute;
         width: 100%;
-        height: 0;
-        border: 1px solid gray;
+        height: 1px;
+        background-color: gray;
         top: calc(50% - 1px);
       }
       .el-button {
