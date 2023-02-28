@@ -1,4 +1,4 @@
-import axiosInstance, { getRequest, IResponse } from "../request";
+import axiosInstance, { deleteRequest, getRequest, IResponse } from "../request";
 
 export enum MessageTypeEnum {
   text = "text",
@@ -20,4 +20,8 @@ export interface ListMessageResponse extends IResponse {
 
 export function listMessageByUserId(userId: string): Promise<ListMessageResponse> {
   return getRequest(axiosInstance, `/message/${userId}/listMessageByUserId`) as Promise<ListMessageResponse>
+}
+
+export function deleteMessageById(id: string, userId: string): Promise<IResponse> {
+  return deleteRequest(axiosInstance, `/message/${id}/${userId}/deleteMessageById`) as Promise<IResponse>
 }

@@ -47,16 +47,11 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export enum ResponseStatusEnum {
-  success = "success",
-  failure = "failure",
-}
 
 export interface IRequestParams {
   [prop: string]: any;
 }
 export interface IResponse {
-  status?: ResponseStatusEnum;
   message?: string;
   data?: any;
   [prop: string]: any;

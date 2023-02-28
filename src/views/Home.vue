@@ -1,20 +1,28 @@
 <script lang="ts" setup>
-import { CopyDocument } from "@element-plus/icons-vue";
-import { nextTick, onMounted, onBeforeUnmount, ref, computed } from "vue";
+import { CopyDocument, Delete } from "@element-plus/icons-vue";
+import { nextTick, onMounted, onBeforeUnmount, ref } from "vue";
 import {
   IMessage,
   listMessageByUserId,
   MessageTypeEnum,
+  deleteMessageById,
 } from "../api/services";
 import { getCookie, removeCookie } from "../assets/tools";
 import { copyToClipboard } from "../assets/tools/commonFunction";
 import env from "../assets/env";
 import router from "../router";
+import { ElMessage } from "element-plus";
 
 enum HeaderStatusEnum {
   loading = "loading",
   failure = "failure",
   success = "success",
+}
+
+enum WebSocketOperationTypeEnum {
+  append = "append",
+  replace = "replace",
+  heartbeat = "heartbeat",
 }
 
 const ws = ref<WebSocket>();
@@ -25,21 +33,20 @@ const headerMessage = ref<string>("服务器连接中...");
 // 是否禁止发送消息
 const disabledSendMessage = ref(true);
 
-const HEARTBEAT = "heartbeat";
 const heartbeatTimer = ref<number>();
 
 const sendTimeoutTimer = ref<number>();
 const handleSendTimeout = () => {
   sendTimeoutTimer.value = setTimeout(() => {
-    handleChatStatus(HeaderStatusEnum.failure)
-  },  5000)
-}
+    handleChatStatus(HeaderStatusEnum.failure);
+  }, 5000);
+};
 // 心跳检查 30s一次
 const heartbeatCheck = () => {
   heartbeatTimer.value = setInterval(() => {
     try {
-      ws.value?.send("heartbeat");
-      handleSendTimeout()
+      ws.value?.send(WebSocketOperationTypeEnum.heartbeat);
+      handleSendTimeout();
     } catch (error) {
       handleChatStatus(HeaderStatusEnum.failure);
     }
@@ -55,10 +62,10 @@ const handleChatStatus = (status: HeaderStatusEnum, code?: number) => {
       heartbeatCheck();
       break;
     case HeaderStatusEnum.failure:
-      headerMessage.value = "服务器连接已断开，请刷新后重试";
+      headerMessage.value = "服务器连接断开，请刷新后重试";
       disabledSendMessage.value = true;
       clearInterval(heartbeatTimer.value);
-      ws.value?.close()
+      ws.value?.close();
       ws.value = undefined;
     default:
       break;
@@ -84,18 +91,18 @@ const chatContentScrollBottom = () => {
 };
 // WebSocket接收消息
 const onMessage = (e: MessageEvent) => {
-  clearTimeout(sendTimeoutTimer.value)
+  clearTimeout(sendTimeoutTimer.value);
   if (e.data) {
-    if (e.data === HEARTBEAT) {
+    if (e.data === WebSocketOperationTypeEnum.heartbeat) {
       return;
     }
-    const res = JSON.parse(e.data);    
+    const res = JSON.parse(e.data);
     if (res.code === 200) {
       const data = res.data;
       // 消息列表
-      if (data instanceof Array) {
+      if (res.operationType === WebSocketOperationTypeEnum.replace) {
         messageList.value = data;
-      } else {
+      } else if (res.operationType === WebSocketOperationTypeEnum.append) {
         // 单条消息
         messageList.value.push(data);
       }
@@ -109,6 +116,7 @@ const onMessage = (e: MessageEvent) => {
 // WebSocket连接成功
 const onOpen = () => {
   handleChatStatus(HeaderStatusEnum.success);
+  clearTimeout(sendTimeoutTimer.value);
   if (ws.value) {
     ws.value.onmessage = onMessage;
     ws.value.onclose = () => handleChatStatus(HeaderStatusEnum.failure);
@@ -118,18 +126,29 @@ const onOpen = () => {
 const connectWebSocket = () => {
   const token = getCookie("token");
   ws.value = new WebSocket(env.WS_URL, token);
+  handleSendTimeout();
   ws.value.onopen = onOpen;
   ws.value.onerror = () => handleChatStatus(HeaderStatusEnum.failure);
 };
+const getMessageBody = (value: string) => {
+  if (value.startsWith("[") && value.endsWith(")") && value.indexOf("](") !== -1) {
+    messageType.value = MessageTypeEnum.link
+    return value.substring(1, value.length - 1).replace("](", ",")
+  }
+  messageType.value = MessageTypeEnum.text
+  return value
+
+}
 // 发送消息
 const sendMessage = () => {
   if (message.value.trim()) {
+    const messageBody = getMessageBody(message.value.trim())
     const data = {
-      message: message.value.trim(),
+      message: getMessageBody(message.value.trim()),
       messageType: messageType.value,
     };
     ws.value?.send(JSON.stringify(data));
-    handleSendTimeout()
+    handleSendTimeout();
     message.value = "";
     nextTick(() => {
       inputRef.value?.focus();
@@ -147,7 +166,9 @@ const getMessageList = (userId: string) => {
       }
       connectWebSocket();
     })
-    .catch(() => {});
+    .catch(() => {
+      handleChatStatus(HeaderStatusEnum.failure);
+    });
 };
 
 onMounted(() => {
@@ -169,8 +190,16 @@ const toggleMessageType = () => {
   } else {
     messageType.value = MessageTypeEnum.text;
   }
-  inputRef.value?.focus()
+  inputRef.value?.focus();
 };
+
+const deleteMessage = (info: IMessage) => {
+  if (info.id && info.userId) {
+    deleteMessageById(info.id, info.userId).then((res) => {
+      ElMessage.success("删除成功")
+    })
+  }
+}
 </script>
 <template>
   <div class="chat-container">
@@ -189,23 +218,32 @@ const toggleMessageType = () => {
           <a
             class="message"
             v-if="item.messageType === MessageTypeEnum.link"
-            :href="item.message"
+            :href="item.message.split(',')[1]"
             target="_blank"
-            >{{ item.message }}
+            >{{ item.message.split(",")[0] }}
           </a>
-          <el-button
-            class="copy-btn"
-            size="small"
-            :icon="CopyDocument"
-            circle
-            @click="copyToClipboard(item.message)"
-          />
+          <div class="chat-operation">
+            <el-button
+              class="copy-btn"
+              size="small"
+              :icon="CopyDocument"
+              circle
+              @click="copyToClipboard(item.message)"
+            />
+            <el-button
+              class="copy-btn"
+              size="small"
+              :icon="Delete"
+              circle
+              @click="deleteMessage(item)"
+            />
+          </div>
         </p>
       </main>
       <footer class="chat-footer">
         <el-input
           ref="inputRef"
-          placeholder="点击ctrl+enter发送消息"
+          placeholder="链接格式：[文本](链接地址)&#13;&#10;CTRL+ENTER发送消息"
           :disabled="disabledSendMessage"
           v-model="message"
           :rows="3"
@@ -213,14 +251,6 @@ const toggleMessageType = () => {
           @keyup.ctrl.enter="sendMessage()"
         />
         <div class="operation">
-          <div class="split-line"></div>
-          <el-button
-            :disabled="disabledSendMessage"
-            class="toggle-type-btn"
-            @click="toggleMessageType()"
-          >
-            {{ messageType === MessageTypeEnum.text ? "文本" : "链接" }}
-          </el-button>
           <el-button
             :disabled="disabledSendMessage"
             class="send-btn"
@@ -268,13 +298,18 @@ const toggleMessageType = () => {
       .message-box {
         display: flex;
         align-items: flex-start;
+        justify-content: space-between;
         line-height: 1.5em;
         .message {
           word-break: break-all;
         }
-        .copy-btn {
+        .chat-operation {
           flex: none;
-          margin-left: 1em;
+          .copy-btn {
+            flex: none;
+            margin-left: 1em;
+          }
+
         }
       }
     }
@@ -292,7 +327,6 @@ const toggleMessageType = () => {
         position: relative;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
         border-left: 1px solid gray;
         margin-left: 4px;
         .split-line {
@@ -306,7 +340,7 @@ const toggleMessageType = () => {
           border: none;
           margin-left: 0;
           border-radius: 0;
-          height: 50%;
+          height: 100%;
         }
       }
     }
