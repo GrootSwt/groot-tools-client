@@ -6,31 +6,69 @@ import {
   listMessageByUserId,
   MessageTypeEnum,
 } from "../api/services";
-import { getCookie } from "../assets/tools";
+import { getCookie, removeCookie } from "../assets/tools";
 import { copyToClipboard } from "../assets/tools/commonFunction";
 import env from "../assets/env";
-
-const HEARTBEAT = "heartbeat";
-const heartbeatTimer = ref<number>();
+import router from "../router";
 
 enum HeaderStatusEnum {
   loading = "loading",
   failure = "failure",
   success = "success",
 }
+
+const ws = ref<WebSocket>();
+
 const headerStatus = ref<HeaderStatusEnum>(HeaderStatusEnum.loading);
 const headerMessage = ref<string>("服务器连接中...");
 
-const handleWSError = () => {
-  headerStatus.value = HeaderStatusEnum.failure;
-  headerMessage.value = "服务器连接已断开，请刷新后重试";
-  disabledSendMessage.value = true;
-  clearInterval(heartbeatTimer.value);
-  ws.value = undefined;
+// 是否禁止发送消息
+const disabledSendMessage = ref(true);
+
+const HEARTBEAT = "heartbeat";
+const heartbeatTimer = ref<number>();
+
+const sendTimeoutTimer = ref<number>();
+const handleSendTimeout = () => {
+  sendTimeoutTimer.value = setTimeout(() => {
+    handleChatStatus(HeaderStatusEnum.failure)
+  },  5000)
+}
+// 心跳检查 30s一次
+const heartbeatCheck = () => {
+  heartbeatTimer.value = setInterval(() => {
+    try {
+      ws.value?.send("heartbeat");
+      handleSendTimeout()
+    } catch (error) {
+      handleChatStatus(HeaderStatusEnum.failure);
+    }
+  }, 30000);
 };
-const headerClass = computed(() => {
-  return headerStatus.value;
-});
+
+const handleChatStatus = (status: HeaderStatusEnum, code?: number) => {
+  headerStatus.value = status;
+  switch (status) {
+    case HeaderStatusEnum.success:
+      headerMessage.value = "已连接到服务器，可以开始聊天";
+      disabledSendMessage.value = false;
+      heartbeatCheck();
+      break;
+    case HeaderStatusEnum.failure:
+      headerMessage.value = "服务器连接已断开，请刷新后重试";
+      disabledSendMessage.value = true;
+      clearInterval(heartbeatTimer.value);
+      ws.value?.close()
+      ws.value = undefined;
+    default:
+      break;
+  }
+  if (code === 401) {
+    removeCookie("token");
+    removeCookie("userId");
+    router.replace({ path: "/login" });
+  }
+};
 
 const chatContentRef = ref<HTMLDivElement>();
 const inputRef = ref<HTMLInputElement>();
@@ -44,47 +82,44 @@ const chatContentScrollBottom = () => {
     }
   });
 };
-// 是否禁止发送消息
-const disabledSendMessage = ref(true);
-// chat websocket
-const ws = ref<WebSocket>();
-
-const heartbeatCheck = () => {
-  heartbeatTimer.value = setInterval(() => {
-    try {
-      ws.value?.send("heartbeat");
-    } catch (error) {
-      handleWSError();
+// WebSocket接收消息
+const onMessage = (e: MessageEvent) => {
+  clearTimeout(sendTimeoutTimer.value)
+  if (e.data) {
+    if (e.data === HEARTBEAT) {
+      return;
     }
-  }, 30000);
-};
-const onMessage = () => {
-  if (ws.value) {
-    ws.value.onmessage = (e) => {
-      if (e.data) {
-        if (e.data === HEARTBEAT) {
-          return;
-        }
-        const data = JSON.parse(e.data);
+    const res = JSON.parse(e.data);    
+    if (res.code === 200) {
+      const data = res.data;
+      // 消息列表
+      if (data instanceof Array) {
+        messageList.value = data;
+      } else {
+        // 单条消息
         messageList.value.push(data);
       }
-    };
+      // 滚动到底部
+      chatContentScrollBottom();
+    } else {
+      handleChatStatus(HeaderStatusEnum.failure, res.code);
+    }
   }
 };
+// WebSocket连接成功
 const onOpen = () => {
-  headerStatus.value = HeaderStatusEnum.success;
-  headerMessage.value = "已连接到服务器，可以开始聊天";
-  disabledSendMessage.value = false;
-  heartbeatCheck();
+  handleChatStatus(HeaderStatusEnum.success);
+  if (ws.value) {
+    ws.value.onmessage = onMessage;
+    ws.value.onclose = () => handleChatStatus(HeaderStatusEnum.failure);
+  }
 };
-// 连接ws
+// WebSocket连接服务器
 const connectWebSocket = () => {
   const token = getCookie("token");
   ws.value = new WebSocket(env.WS_URL, token);
   ws.value.onopen = onOpen;
-  ws.value.onmessage = onMessage;
-  ws.value.onclose = handleWSError;
-  ws.value.onerror = handleWSError;
+  ws.value.onerror = () => handleChatStatus(HeaderStatusEnum.failure);
 };
 // 发送消息
 const sendMessage = () => {
@@ -93,16 +128,15 @@ const sendMessage = () => {
       message: message.value.trim(),
       messageType: messageType.value,
     };
-    messageList.value.push(data);
     ws.value?.send(JSON.stringify(data));
+    handleSendTimeout()
     message.value = "";
     nextTick(() => {
-      chatContentScrollBottom();
       inputRef.value?.focus();
-    })
+    });
   }
 };
-
+// 初始加载获取消息列表
 const messageList = ref<Array<IMessage>>([]);
 const getMessageList = (userId: string) => {
   listMessageByUserId(userId)
@@ -135,12 +169,13 @@ const toggleMessageType = () => {
   } else {
     messageType.value = MessageTypeEnum.text;
   }
+  inputRef.value?.focus()
 };
 </script>
 <template>
   <div class="chat-container">
     <div class="chat-box">
-      <header class="chat-header" :class="headerClass">
+      <header class="chat-header" :class="headerStatus">
         {{ headerMessage }}
       </header>
       <main ref="chatContentRef" class="chat-main">
