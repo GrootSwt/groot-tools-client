@@ -2,10 +2,10 @@
 import { CopyDocument, Delete } from "@element-plus/icons-vue";
 import { nextTick, onMounted, onBeforeUnmount, ref } from "vue";
 import {
-  IMessage,
-  listMessageByUserId,
-  MessageTypeEnum,
-  deleteMessageById,
+  IMemorandum,
+  listMemorandumByUserId,
+  ContentTypeEnum,
+  deleteMemorandumById,
 } from "../../api/services";
 import { getCookie, removeCookie } from "../../assets/tools";
 import { copyToClipboard } from "../../assets/tools/commonFunction";
@@ -13,7 +13,7 @@ import env from "../../assets/env";
 import router from "../../router";
 import { ElMessage } from "element-plus";
 
-enum HeaderStatusEnum {
+enum LinkStatusEnum {
   loading = "loading",
   failure = "failure",
   success = "success",
@@ -27,18 +27,18 @@ enum WebSocketOperationTypeEnum {
 
 const ws = ref<WebSocket>();
 
-const headerStatus = ref<HeaderStatusEnum>(HeaderStatusEnum.loading);
-const headerMessage = ref<string>("服务器连接中...");
+const linkStatus = ref<LinkStatusEnum>(LinkStatusEnum.loading);
+const linkMessage = ref<string>("服务器连接中...");
 
 // 是否禁止发送消息
-const disabledSendMessage = ref(true);
+const disabledSend = ref(true);
 
 const heartbeatTimer = ref<number>();
 
 const sendTimeoutTimer = ref<number>();
 const handleSendTimeout = () => {
   sendTimeoutTimer.value = setTimeout(() => {
-    handleChatStatus(HeaderStatusEnum.failure);
+    handleLinkStatus(LinkStatusEnum.failure);
   }, 5000);
 };
 // 心跳检查 30s一次
@@ -48,22 +48,22 @@ const heartbeatCheck = () => {
       ws.value?.send(WebSocketOperationTypeEnum.heartbeat);
       handleSendTimeout();
     } catch (error) {
-      handleChatStatus(HeaderStatusEnum.failure);
+      handleLinkStatus(LinkStatusEnum.failure);
     }
   }, 30000);
 };
 
-const handleChatStatus = (status: HeaderStatusEnum, code?: number) => {
-  headerStatus.value = status;
+const handleLinkStatus = (status: LinkStatusEnum, code?: number) => {
+  linkStatus.value = status;
   switch (status) {
-    case HeaderStatusEnum.success:
-      headerMessage.value = "已连接到服务器";
-      disabledSendMessage.value = false;
+    case LinkStatusEnum.success:
+      linkMessage.value = "已连接到服务器";
+      disabledSend.value = false;
       heartbeatCheck();
       break;
-    case HeaderStatusEnum.failure:
-      headerMessage.value = "服务器连接断开，请刷新后重试";
-      disabledSendMessage.value = true;
+    case LinkStatusEnum.failure:
+      linkMessage.value = "服务器连接断开，请刷新后重试";
+      disabledSend.value = true;
       clearInterval(heartbeatTimer.value);
       ws.value?.close();
       ws.value = undefined;
@@ -77,15 +77,15 @@ const handleChatStatus = (status: HeaderStatusEnum, code?: number) => {
   }
 };
 
-const chatContentRef = ref<HTMLDivElement>();
+const memorandumListRef = ref<HTMLDivElement>();
 const inputRef = ref<HTMLInputElement>();
 // 自动滚动到底部
-const chatContentScrollBottom = () => {
+const memorandumContentScrollBottom = () => {
   nextTick(() => {
-    const chatContentEl = chatContentRef.value;
-    if (chatContentEl) {
-      chatContentEl.scrollTop =
-        chatContentEl.scrollHeight - chatContentEl.clientHeight;
+    const memorandumListEl = memorandumListRef.value;
+    if (memorandumListEl) {
+      memorandumListEl.scrollTop =
+        memorandumListEl.scrollHeight - memorandumListEl.clientHeight;
     }
   });
 };
@@ -107,19 +107,19 @@ const onMessage = (e: MessageEvent) => {
         messageList.value.push(data);
       }
       // 滚动到底部
-      chatContentScrollBottom();
+      memorandumContentScrollBottom();
     } else {
-      handleChatStatus(HeaderStatusEnum.failure, res.code);
+      handleLinkStatus(LinkStatusEnum.failure, res.code);
     }
   }
 };
 // WebSocket连接成功
 const onOpen = () => {
-  handleChatStatus(HeaderStatusEnum.success);
+  handleLinkStatus(LinkStatusEnum.success);
   clearTimeout(sendTimeoutTimer.value);
   if (ws.value) {
     ws.value.onmessage = onMessage;
-    ws.value.onclose = () => handleChatStatus(HeaderStatusEnum.failure);
+    ws.value.onclose = () => handleLinkStatus(LinkStatusEnum.failure);
   }
 };
 // WebSocket连接服务器
@@ -128,46 +128,46 @@ const connectWebSocket = () => {
   ws.value = new WebSocket(env.WS_URL, token);
   handleSendTimeout();
   ws.value.onopen = onOpen;
-  ws.value.onerror = () => handleChatStatus(HeaderStatusEnum.failure);
+  ws.value.onerror = () => handleLinkStatus(LinkStatusEnum.failure);
 };
 const getMessageBody = (value: string) => {
   if (value.startsWith("[") && value.endsWith(")") && value.indexOf("](") !== -1) {
-    messageType.value = MessageTypeEnum.link
+    contentType.value = ContentTypeEnum.link
     return value.substring(1, value.length - 1).replace("](", ",")
   }
-  messageType.value = MessageTypeEnum.text
+  contentType.value = ContentTypeEnum.text
   return value
 
 }
 // 发送消息
 const sendMessage = () => {
-  if (message.value.trim()) {
-    const messageBody = getMessageBody(message.value.trim())
+  if (content.value.trim()) {
+    const messageBody = getMessageBody(content.value.trim())
     const data = {
-      message: getMessageBody(message.value.trim()),
-      messageType: messageType.value,
+      content: getMessageBody(content.value.trim()),
+      contentType: contentType.value,
     };
     ws.value?.send(JSON.stringify(data));
     handleSendTimeout();
-    message.value = "";
+    content.value = "";
     nextTick(() => {
       inputRef.value?.focus();
     });
   }
 };
 // 初始加载获取消息列表
-const messageList = ref<Array<IMessage>>([]);
+const messageList = ref<Array<IMemorandum>>([]);
 const getMessageList = (userId: string) => {
-  listMessageByUserId(userId)
+  listMemorandumByUserId(userId)
     .then((res) => {
       if (res.data) {
         messageList.value = res.data;
-        chatContentScrollBottom();
+        memorandumContentScrollBottom();
       }
       connectWebSocket();
     })
     .catch(() => {
-      handleChatStatus(HeaderStatusEnum.failure);
+      handleLinkStatus(LinkStatusEnum.failure);
     });
 };
 
@@ -179,54 +179,47 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  ws.value && ws.value.close()
   clearInterval(heartbeatTimer.value);
 });
 
-const messageType = ref<MessageTypeEnum>(MessageTypeEnum.text);
-const message = ref<string>("");
-const toggleMessageType = () => {
-  if (messageType.value === MessageTypeEnum.text) {
-    messageType.value = MessageTypeEnum.link;
-  } else {
-    messageType.value = MessageTypeEnum.text;
-  }
-  inputRef.value?.focus();
-};
+const contentType = ref<ContentTypeEnum>(ContentTypeEnum.text);
+const content = ref<string>("");
 
-const deleteMessage = (info: IMessage) => {
-  if (info.id && info.userId) {
-    deleteMessageById(info.id, info.userId).then((res) => {
+const deleteMessage = (content: IMemorandum) => {
+  if (content.id && content.userId) {
+    deleteMemorandumById(content.id, content.userId).then(() => {
       ElMessage.success("删除成功")
     })
   }
 }
 </script>
 <template>
-  <div class="chat-container">
-    <div class="chat-box">
-      <header class="chat-header" :class="headerStatus">
-        {{ headerMessage }}
+  <div class="memorandum-container">
+    <div class="memorandum-box">
+      <header class="memorandum-header" :class="linkStatus">
+        {{ linkMessage }}
       </header>
-      <main ref="chatContentRef" class="chat-main">
-        <p class="message-box" v-for="item in messageList" :key="item.id">
+      <main ref="memorandumListRef" class="memorandum-main">
+        <p class="content-box" v-for="item in messageList" :key="item.id">
           <span
-            v-if="item.messageType === MessageTypeEnum.text"
+            v-if="item.contentType === ContentTypeEnum.text"
           >
-            {{ item.message }}
+            {{ item.content }}
           </span>
           <a
-            v-if="item.messageType === MessageTypeEnum.link"
-            :href="item.message.split(',')[1]"
+            v-if="item.contentType === ContentTypeEnum.link"
+            :href="item.content.split(',')[1]"
             target="_blank"
-            >{{ item.message.split(",")[0] }}
+            >{{ item.content.split(",")[0] }}
           </a>
-          <div class="chat-operation">
+          <div class="memorandum-operation">
             <el-button
               class="copy-btn"
               size="small"
               :icon="CopyDocument"
               circle
-              @click="copyToClipboard(item.message)"
+              @click="copyToClipboard(item.content)"
             />
             <el-button
               class="copy-btn"
@@ -238,19 +231,19 @@ const deleteMessage = (info: IMessage) => {
           </div>
         </p>
       </main>
-      <footer class="chat-footer">
+      <footer class="memorandum-footer">
         <el-input
           ref="inputRef"
           placeholder="链接格式：[文本](链接地址)&#13;&#10;CTRL+ENTER发送消息"
-          :disabled="disabledSendMessage"
-          v-model="message"
+          :disabled="disabledSend"
+          v-model="content"
           :rows="3"
           type="textarea"
           @keyup.ctrl.enter="sendMessage()"
         />
         <div class="operation">
           <el-button
-            :disabled="disabledSendMessage"
+            :disabled="disabledSend"
             class="send-btn"
             @click="sendMessage()"
           >
@@ -262,19 +255,19 @@ const deleteMessage = (info: IMessage) => {
   </div>
 </template>
 <style lang="scss" scoped>
-.chat-container {
+.memorandum-container {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
-  .chat-box {
+  .memorandum-box {
     width: 100%;
     height: 100%;
     max-width: 500px;
     display: flex;
     flex-direction: column;
     border: 1px solid gray;
-    .chat-header {
+    .memorandum-header {
       flex: none;
       text-align: center;
       line-height: 180%;
@@ -289,11 +282,11 @@ const deleteMessage = (info: IMessage) => {
         color: #50ba3e;
       }
     }
-    .chat-main {
+    .memorandum-main {
       flex: 1;
       overflow-y: auto;
       padding: 0 12px;
-      .message-box {
+      .content-box {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
@@ -303,7 +296,7 @@ const deleteMessage = (info: IMessage) => {
         border-radius: 1em;
         white-space: pre-wrap;
         word-break: break-all;
-        .chat-operation {
+        .memorandum-operation {
           flex: none;
           .copy-btn {
             flex: none;
@@ -313,7 +306,7 @@ const deleteMessage = (info: IMessage) => {
         }
       }
     }
-    .chat-footer {
+    .memorandum-footer {
       flex: none;
       display: flex;
       border-top: 1px solid gray;

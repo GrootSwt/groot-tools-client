@@ -5,14 +5,10 @@ import { ILoginForm, loginRequest } from "../api/services";
 import router from "../router";
 const loginFormRef = ref<FormInstance>();
 const loginRules = reactive<FormRules>({
-  systemPassword: [
-    { required: true, message: "请输入系统密码", trigger: "blur" },
-  ],
   username: [{ required: true, message: "请输入用户名称", trigger: "blur" }],
   password: [{ required: true, message: "请输入用户密码", trigger: "blur" }],
 });
 const loginForm = reactive<ILoginForm>({
-  systemPassword: "",
   username: "",
   password: "",
 });
@@ -35,9 +31,6 @@ const login = () => {
       label-position="top"
       class="login-form"
     >
-      <el-form-item label="系统密码" prop="systemPassword">
-        <el-input type="password" maxlength="20" v-model="loginForm.systemPassword" />
-      </el-form-item>
       <el-form-item label="账号" prop="username">
         <el-input maxlength="20" v-model="loginForm.username" />
       </el-form-item>

@@ -1,2 +1,2 @@
 export * from "./login";
-export * from "./message";
+export * from "./memorandum";
