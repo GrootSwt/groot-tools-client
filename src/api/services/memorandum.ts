@@ -1,15 +1,9 @@
 import axiosInstance, { deleteRequest, getRequest, IResponse } from "../request";
 
-export enum ContentTypeEnum {
-  text = "text",
-  link = "link"
-}
-
 export interface IMemorandum {
   id?: string;
   userId?: string;
   content: string;
-  contentType: ContentTypeEnum;
   createTime?: Date;
   updateTime?: Date;
 }

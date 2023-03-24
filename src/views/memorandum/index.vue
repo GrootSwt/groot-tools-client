@@ -4,7 +4,6 @@ import { nextTick, onMounted, onBeforeUnmount, ref } from "vue";
 import {
   IMemorandum,
   listMemorandumByUserId,
-  ContentTypeEnum,
   deleteMemorandumById,
 } from "../../api/services";
 import { getCookie, removeCookie } from "../../assets/tools";
@@ -131,21 +130,26 @@ const connectWebSocket = () => {
   ws.value.onerror = () => handleLinkStatus(LinkStatusEnum.failure);
 };
 const getMessageBody = (value: string) => {
-  if (value.startsWith("[") && value.endsWith(")") && value.indexOf("](") !== -1) {
-    contentType.value = ContentTypeEnum.link
-    return value.substring(1, value.length - 1).replace("](", ",")
+  const linkRule = /\[.+\]\(http(s)?:\/\/([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)*\)/g;
+  const links = value.match(linkRule)
+  if (links) {
+    for (let i = 0; i < links.length; i++) {
+      const link = links[i]
+      const splitIndex = link.indexOf("](")
+      const title = link.substring(1, splitIndex)
+      const href = link.substring(splitIndex + 2, link.length - 1)
+      const replaceLink = `<a href="${href}" target="blank">${title}</a>`
+      value = value.replace(link, replaceLink)
+    }
   }
-  contentType.value = ContentTypeEnum.text
   return value
-
 }
 // 发送消息
 const sendMessage = () => {
-  if (content.value.trim()) {
-    const messageBody = getMessageBody(content.value.trim())
+  const result = content.value.trim()
+  if (result) {
     const data = {
-      content: getMessageBody(content.value.trim()),
-      contentType: contentType.value,
+      content: result,
     };
     ws.value?.send(JSON.stringify(data));
     handleSendTimeout();
@@ -183,7 +187,6 @@ onBeforeUnmount(() => {
   clearInterval(heartbeatTimer.value);
 });
 
-const contentType = ref<ContentTypeEnum>(ContentTypeEnum.text);
 const content = ref<string>("");
 
 const deleteMessage = (content: IMemorandum) => {
@@ -202,17 +205,7 @@ const deleteMessage = (content: IMemorandum) => {
       </header>
       <main ref="memorandumListRef" class="memorandum-main">
         <p class="content-box" v-for="item in messageList" :key="item.id">
-          <span
-            v-if="item.contentType === ContentTypeEnum.text"
-          >
-            {{ item.content }}
-          </span>
-          <a
-            v-if="item.contentType === ContentTypeEnum.link"
-            :href="item.content.split(',')[1]"
-            target="_blank"
-            >{{ item.content.split(",")[0] }}
-          </a>
+         <div v-html="getMessageBody(item.content)"></div>
           <div class="memorandum-operation">
             <el-button
               class="copy-btn"
@@ -239,6 +232,7 @@ const deleteMessage = (content: IMemorandum) => {
           v-model="content"
           :rows="3"
           type="textarea"
+          maxlength="2000"
           @keyup.ctrl.enter="sendMessage()"
         />
         <div class="operation">
