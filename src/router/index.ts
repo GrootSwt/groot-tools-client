@@ -42,7 +42,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = getCookie("token");
   if (to.meta?.auth && !token) {
-    next({ path: "/login" });
+    next({ path: "/login", query: { redirect: to.fullPath } });
   } else {
     next();
   }

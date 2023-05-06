@@ -3,6 +3,12 @@ import { FormInstance, FormRules } from "element-plus";
 import { reactive, ref } from "vue";
 import { ILoginForm, loginRequest } from "../api/services";
 import router from "../router";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
+
+const redirect = route.query.redirect;
+
 const loginFormRef = ref<FormInstance>();
 const loginRules = reactive<FormRules>({
   username: [{ required: true, message: "请输入用户名称", trigger: "blur" }],
@@ -16,7 +22,7 @@ const login = () => {
   loginFormRef.value?.validate((valid) => {
     if (valid) {
       loginRequest(loginForm).then(() => {
-        router.replace({ path: "/" });
+        router.push({ path: redirect ? (redirect as string) : "/" });
       });
     }
   });
