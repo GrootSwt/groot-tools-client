@@ -17,7 +17,18 @@ const router = createRouter({
     {
       path: "/memorandum",
       name: "memorandum",
-      component: () => import("../views/memorandum/index.vue")
+      component: () => import("../views/memorandum/index.vue"),
+      meta: {
+        auth: true,
+      },
+    },
+    {
+      path: "/image-compress",
+      name: "imageCompress",
+      component: () => import("../views/image-compress/index.vue"),
+      meta: {
+        auth: true,
+      },
     },
     {
       path: "/:pathMatch(.*)*",
@@ -28,12 +39,12 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach(async (to, from, next) => {
-  const token = getCookie("token")
-  if (!token && to.path !== "/login") {
-    next({ path: "/login" })
+router.beforeEach((to, from, next) => {
+  const token = getCookie("token");
+  if (to.meta?.auth && !token) {
+    next({ path: "/login" });
   } else {
-    next()
+    next();
   }
 });
 

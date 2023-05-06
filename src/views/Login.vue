@@ -16,8 +16,8 @@ const login = () => {
   loginFormRef.value?.validate((valid) => {
     if (valid) {
       loginRequest(loginForm).then(() => {
-        router.replace({ path: "/" })
-      }).catch(() =>{});
+        router.replace({ path: "/" });
+      });
     }
   });
 };
@@ -35,7 +35,12 @@ const login = () => {
         <el-input maxlength="20" v-model="loginForm.username" />
       </el-form-item>
       <el-form-item label="密码" prop="password">
-        <el-input type="password" maxlength="20" v-model="loginForm.password" @keydown.enter="login()" />
+        <el-input
+          type="password"
+          maxlength="20"
+          v-model="loginForm.password"
+          @keydown.enter="login()"
+        />
       </el-form-item>
       <div class="login-operation">
         <el-button @click="login()">登录</el-button>

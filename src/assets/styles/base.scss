@@ -1,18 +1,49 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 html {
   height: 100%;
   body {
-    height: 100%;
-    margin: 0;
+    height: inherit;
     #app {
-      height: 100%;
+      height: inherit;
     }
   }
 }
 
-* {
-  box-sizing: border-box;
-}
-
 ::-webkit-scrollbar {
   display: none;
+}
+
+.margin-top-24 {
+  margin-top: 24px;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.flex-none {
+  flex: none;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.gap-12 {
+  gap: 12px;
+}
+
+.margin-auto {
+  margin: auto;
 }

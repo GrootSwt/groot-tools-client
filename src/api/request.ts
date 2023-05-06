@@ -9,25 +9,25 @@ const axiosInstance = axios.create({
 });
 
 function toLoginPage() {
-  removeCookie("userId")
-  removeCookie("token")
-  router.replace({ path: "/login" })
+  removeCookie("userId");
+  removeCookie("token");
+  router.replace({ path: "/login" });
 }
 
 function handleResponseError(error: AxiosError) {
-  const response = error.response
+  const response = error.response;
   if (response) {
-    const data = response.data as IResponse
+    const data = response.data as IResponse;
     switch (response.status) {
       case 401:
-        ElMessage.error(data.message)
-        toLoginPage()
+        ElMessage.error(data.message);
+        toLoginPage();
         break;
-      case 500: 
-        ElMessage.error("服务器连接失败")
+      case 500:
+        ElMessage.error("服务器连接失败");
         break;
       default:
-        ElMessage.error(data.message)
+        ElMessage.error(data.message);
         break;
     }
   }
@@ -38,15 +38,14 @@ axiosInstance.interceptors.response.use(
     if (response.status === 200) {
       return response.data;
     } else {
-      return Promise.reject({ response })
+      return Promise.reject({ response });
     }
   },
   (error: AxiosError) => {
-    handleResponseError(error)
-    return Promise.reject(error)
+    handleResponseError(error);
+    return Promise.reject(error);
   }
 );
-
 
 export interface IRequestParams {
   [prop: string]: any;

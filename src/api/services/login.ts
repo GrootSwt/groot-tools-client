@@ -5,5 +5,5 @@ export interface ILoginForm {
   password?: string;
 }
 export function loginRequest(loginForm: ILoginForm) {
-  return postRequest(axiosInstance, "/login", loginForm)
+  return postRequest(axiosInstance, "/login", loginForm);
 }

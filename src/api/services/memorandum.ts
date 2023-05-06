@@ -1,4 +1,8 @@
-import axiosInstance, { deleteRequest, getRequest, IResponse } from "../request";
+import axiosInstance, {
+  deleteRequest,
+  getRequest,
+  IResponse,
+} from "../request";
 
 export interface IMemorandum {
   id?: string;
@@ -9,13 +13,24 @@ export interface IMemorandum {
 }
 
 export interface ListMemorandumResponse extends IResponse {
-  data?: Array<IMemorandum>
+  data?: Array<IMemorandum>;
 }
 
-export function listMemorandumByUserId(userId: string): Promise<ListMemorandumResponse> {
-  return getRequest(axiosInstance, `/memorandum/${userId}/listMemorandumByUserId`) as Promise<ListMemorandumResponse>
+export function listMemorandumByUserId(
+  userId: string
+): Promise<ListMemorandumResponse> {
+  return getRequest(
+    axiosInstance,
+    `/memorandum/${userId}/listMemorandumByUserId`
+  ) as Promise<ListMemorandumResponse>;
 }
 
-export function deleteMemorandumById(id: string, userId: string): Promise<IResponse> {
-  return deleteRequest(axiosInstance, `/memorandum/${id}/${userId}/deleteMemorandumById`) as Promise<IResponse>
+export function deleteMemorandumById(
+  id: string,
+  userId: string
+): Promise<IResponse> {
+  return deleteRequest(
+    axiosInstance,
+    `/memorandum/${id}/${userId}/deleteMemorandumById`
+  ) as Promise<IResponse>;
 }

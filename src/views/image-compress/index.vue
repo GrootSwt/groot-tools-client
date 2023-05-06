@@ -1,0 +1,211 @@
+<script lang="ts" setup>
+import { UploadFilled } from "@element-plus/icons-vue";
+import {
+  compressImage,
+  ImageFileInfo,
+  getImageFileInfo,
+  downloadFile,
+  validateNumeric,
+} from "../../assets/tools/index";
+import {
+  genFileId,
+  UploadFile,
+  UploadInstance,
+  UploadProps,
+  UploadRawFile,
+} from "element-plus";
+import { ref, watch } from "vue";
+
+const uploadRef = ref<UploadInstance>();
+const originFile = ref<UploadFile>();
+const originImageFileInfo = ref<ImageFileInfo>();
+watch(
+  () => originFile.value,
+  (next) => {
+    if (next?.raw) {
+      getImageFileInfo(next.raw as File).then((imageFileInfo) => {
+        originImageFileInfo.value = imageFileInfo;
+      });
+    } else {
+      originImageFileInfo.value = undefined;
+    }
+  }
+);
+const handleExceed: UploadProps["onExceed"] = (files) => {
+  uploadRef.value?.clearFiles();
+  const file = files[0] as UploadRawFile;
+  file.uid = genFileId();
+  uploadRef.value?.handleStart(file);
+  compressedFileParams.value = { ...initParams };
+};
+const handleChange: UploadProps["onChange"] = (file) => {
+  originFile.value = file;
+};
+const handleRemove: UploadProps["onRemove"] = () => {
+  originFile.value = undefined;
+  compressedFile.value = undefined;
+  compressedFileParams.value = { ...initParams };
+};
+
+const initParams = {
+  maxSize: 256,
+  maxWidth: 520,
+  maxHeight: 520,
+};
+const compressedFileParams = ref({ ...initParams });
+const compressLoading = ref<boolean>(false);
+const compressedFile = ref<File>();
+const compressedImageFileInfo = ref<ImageFileInfo>();
+watch(
+  () => compressedFile.value,
+  (next) => {
+    if (next) {
+      getImageFileInfo(next).then((imageFileInfo) => {
+        compressedImageFileInfo.value = imageFileInfo;
+      });
+    } else {
+      compressedImageFileInfo.value = undefined;
+    }
+  }
+);
+
+const compress = async () => {
+  compressLoading.value = true;
+  const result = await compressImage(
+    originFile.value?.raw as File,
+    compressedFileParams.value.maxSize,
+    undefined,
+    compressedFileParams.value.maxWidth,
+    compressedFileParams.value.maxHeight
+  ).finally(() => {
+    compressLoading.value = false;
+  });
+  compressedFile.value = result;
+};
+
+const downloadCompressedFile = () => {
+  compressedFile.value && downloadFile(compressedFile.value);
+};
+</script>
+<template>
+  <section class="image-compress-container">
+    <el-upload
+      class="margin-auto upload-box"
+      ref="uploadRef"
+      drag
+      accept="image/png, image/jpeg"
+      :limit="1"
+      :auto-upload="false"
+      :on-exceed="handleExceed"
+      :on-change="handleChange"
+      :on-remove="handleRemove"
+    >
+      <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+      <div class="el-upload__text">拖拽或者<em>点击上传</em></div>
+      <template #tip>
+        <div class="el-upload__tip bold">
+          支持图片格式：<code>image/png, image/jpeg</code>
+        </div>
+        <div class="el-upload__tip bold">仅支持上传一张图片</div>
+      </template>
+    </el-upload>
+    <section class="origin-image-info" v-if="originImageFileInfo">
+      <h3 class="margin-top-24">原图片文件信息：</h3>
+      <article class="flex flex-wrap gap-12 margin-top-24">
+        <h5 class="flex-none info-item">
+          大小: {{ originImageFileInfo.size }}
+        </h5>
+        <h5 class="flex-none info-item">
+          宽度: {{ originImageFileInfo.width }}
+        </h5>
+        <h5 class="flex-none info-item">
+          高度: {{ originImageFileInfo.height }}
+        </h5>
+      </article>
+    </section>
+    <section class="image-compress-params" v-if="originImageFileInfo">
+      <h3>压缩后图片参数设置：</h3>
+      <article class="flex flex-wrap gap-12 margin-top-24">
+        <el-input
+          class="flex-none"
+          v-model="compressedFileParams.maxSize"
+          @input="validateNumeric(compressedFileParams, 'maxSize')"
+          placeholder="max size"
+        >
+          <template #prepend>最大体积</template>
+          <template #append>KB</template>
+        </el-input>
+        <el-input
+          class="flex-none"
+          v-model="compressedFileParams.maxWidth"
+          @input="validateNumeric(compressedFileParams, 'maxWidth')"
+          placeholder="max width"
+        >
+          <template #prepend>最大宽度</template>
+          <template #append>px</template>
+        </el-input>
+        <el-input
+          class="flex-none"
+          v-model="compressedFileParams.maxHeight"
+          @input="validateNumeric(compressedFileParams, 'maxHeight')"
+          placeholder="max height"
+        >
+          <template #prepend>最大高度</template>
+          <template #append>px</template>
+        </el-input>
+      </article>
+      <el-button
+        class="margin-top-24"
+        type="primary"
+        @click="compress"
+        :loading="compressLoading"
+      >
+        {{ compressLoading ? "压缩中" : "压缩" }}
+      </el-button>
+    </section>
+    <section class="compressed-image-info" v-if="compressedImageFileInfo">
+      <h3 class="margin-top-24">压缩后的图片信息：</h3>
+      <article class="flex flex-wrap gap-12 margin-top-24">
+        <h5 class="flex-none info-item">
+          大小：{{ compressedImageFileInfo.size }}
+        </h5>
+        <h5 class="flex-none info-item">
+          宽度：{{ compressedImageFileInfo.width }}
+        </h5>
+        <h5 class="flex-none info-item">
+          高度：{{ compressedImageFileInfo.height }}
+        </h5>
+      </article>
+      <el-button
+        type="primary"
+        class="margin-top-24"
+        @click="downloadCompressedFile"
+        >下载</el-button
+      >
+    </section>
+  </section>
+</template>
+<style lang="scss" scoped>
+.image-compress-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 24px;
+  .upload-box {
+    max-width: 520px;
+  }
+  .origin-image-info,
+  .compressed-image-info {
+    .info-item {
+      background-color: #f3f6f9;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+  }
+  .image-compress-params {
+    margin-top: 24px;
+    :deep(.el-input) {
+      width: 220px;
+    }
+  }
+}
+</style>

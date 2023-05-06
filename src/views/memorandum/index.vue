@@ -7,7 +7,7 @@ import {
   deleteMemorandumById,
 } from "../../api/services";
 import { getCookie, removeCookie } from "../../assets/tools";
-import { copyToClipboard } from "../../assets/tools/commonFunction";
+import { copyToClipboard } from "../../assets/tools/common";
 import env from "../../assets/env";
 import router from "../../router";
 import { ElMessage } from "element-plus";
