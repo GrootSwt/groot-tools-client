@@ -66,6 +66,7 @@ const handleLinkStatus = (status: LinkStatusEnum, code?: number) => {
       clearInterval(heartbeatTimer.value);
       ws.value?.close();
       ws.value = undefined;
+      break;
     default:
       break;
   }
@@ -131,22 +132,22 @@ const connectWebSocket = () => {
 };
 const getMessageBody = (value: string) => {
   const linkRule = /\[.+\]\(http(s)?:\/\/([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)*\)/g;
-  const links = value.match(linkRule)
+  const links = value.match(linkRule);
   if (links) {
     for (let i = 0; i < links.length; i++) {
-      const link = links[i]
-      const splitIndex = link.indexOf("](")
-      const title = link.substring(1, splitIndex)
-      const href = link.substring(splitIndex + 2, link.length - 1)
-      const replaceLink = `<a href="${href}" target="blank">${title}</a>`
-      value = value.replace(link, replaceLink)
+      const link = links[i];
+      const splitIndex = link.indexOf("](");
+      const title = link.substring(1, splitIndex);
+      const href = link.substring(splitIndex + 2, link.length - 1);
+      const replaceLink = `<a href="${href}" target="blank">${title}</a>`;
+      value = value.replace(link, replaceLink);
     }
   }
-  return value
-}
+  return value;
+};
 // 发送消息
 const sendMessage = () => {
-  const result = content.value.trim()
+  const result = content.value.trim();
   if (result) {
     const data = {
       content: result,
@@ -183,7 +184,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  ws.value && ws.value.close()
+  ws.value && ws.value.close();
   clearInterval(heartbeatTimer.value);
 });
 
@@ -192,10 +193,10 @@ const content = ref<string>("");
 const deleteMessage = (content: IMemorandum) => {
   if (content.id && content.userId) {
     deleteMemorandumById(content.id, content.userId).then(() => {
-      ElMessage.success("删除成功")
-    })
+      ElMessage.success("删除成功");
+    });
   }
-}
+};
 </script>
 <template>
   <div class="memorandum-container">
@@ -204,8 +205,8 @@ const deleteMessage = (content: IMemorandum) => {
         {{ linkMessage }}
       </header>
       <main ref="memorandumListRef" class="memorandum-main">
-        <p class="content-box" v-for="item in messageList" :key="item.id">
-         <div v-html="getMessageBody(item.content)"></div>
+        <div class="content-box" v-for="item in messageList" :key="item.id">
+          <div v-html="getMessageBody(item.content)"></div>
           <div class="memorandum-operation">
             <el-button
               class="copy-btn"
@@ -222,7 +223,7 @@ const deleteMessage = (content: IMemorandum) => {
               @click="deleteMessage(item)"
             />
           </div>
-        </p>
+        </div>
       </main>
       <footer class="memorandum-footer">
         <el-input
@@ -290,13 +291,13 @@ const deleteMessage = (content: IMemorandum) => {
         border-radius: 1em;
         white-space: pre-wrap;
         word-break: break-all;
+        margin-top: 12px;
         .memorandum-operation {
           flex: none;
           .copy-btn {
             flex: none;
             margin-left: 1em;
           }
-
         }
       }
     }
