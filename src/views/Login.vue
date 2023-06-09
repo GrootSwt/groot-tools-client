@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { FormInstance, FormRules } from "element-plus";
 import { reactive, ref } from "vue";
-import { ILoginForm, loginRequest } from "../api/services";
+import service, { ILoginForm } from "@/api/services";
 import router from "../router";
 import { useRoute } from "vue-router";
+import { requestWrapper } from "@/api/request";
 
 const route = useRoute();
 
@@ -11,17 +12,18 @@ const redirect = route.query.redirect;
 
 const loginFormRef = ref<FormInstance>();
 const loginRules = reactive<FormRules>({
-  username: [{ required: true, message: "请输入用户名称", trigger: "blur" }],
-  password: [{ required: true, message: "请输入用户密码", trigger: "blur" }],
+  account: [{ required: true, message: "请输入账号", trigger: "blur" }],
+  password: [{ required: true, message: "请输入密码", trigger: "blur" }],
 });
 const loginForm = reactive<ILoginForm>({
-  username: "",
+  account: "",
   password: "",
 });
 const login = () => {
   loginFormRef.value?.validate((valid) => {
     if (valid) {
-      loginRequest(loginForm).then(() => {
+      requestWrapper(async () => {
+        await service.login.postLogin(loginForm);
         router.push({ path: redirect ? (redirect as string) : "/" });
       });
     }
@@ -37,8 +39,8 @@ const login = () => {
       label-position="top"
       class="login-form"
     >
-      <el-form-item label="账号" prop="username">
-        <el-input maxlength="20" v-model="loginForm.username" />
+      <el-form-item label="账号" prop="account">
+        <el-input maxlength="20" v-model="loginForm.account" />
       </el-form-item>
       <el-form-item label="密码" prop="password">
         <el-input

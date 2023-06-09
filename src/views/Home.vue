@@ -1,13 +1,12 @@
 <script lang="ts" setup></script>
 <template>
-  <section class="home-container">
+  <section class="p-6 home-container">
     <RouterLink to="/memorandum" class="router-link">多端备忘录</RouterLink>
     <RouterLink to="/image-compress" class="router-link">图片压缩</RouterLink>
   </section>
 </template>
 <style lang="scss" scoped>
 .home-container {
-  padding: 24px;
   .router-link {
     display: block;
     & + .router-link {

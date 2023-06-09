@@ -14,7 +14,7 @@ import {
   UploadProps,
   UploadRawFile,
 } from "element-plus";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 const uploadRef = ref<UploadInstance>();
 const originFile = ref<UploadFile>();
@@ -52,9 +52,19 @@ const initParams = {
   maxWidth: 520,
   maxHeight: 520,
 };
-const compressedFileParams = ref({ ...initParams });
+const compressedFileParams = ref<{
+  maxSize: number;
+  maxWidth: number;
+  maxHeight: number;
+}>({ ...initParams });
 const compressLoading = ref<boolean>(false);
 const compressedFile = ref<File>();
+const compressedFileUrl = computed(() => {
+  if (compressedFile.value) {
+    return URL.createObjectURL(compressedFile.value);
+  }
+  return "";
+});
 const compressedImageFileInfo = ref<ImageFileInfo>();
 watch(
   () => compressedFile.value,
@@ -90,7 +100,7 @@ const downloadCompressedFile = () => {
 <template>
   <section class="image-compress-container">
     <el-upload
-      class="margin-auto upload-box"
+      class="m-auto upload-box"
       ref="uploadRef"
       drag
       accept="image/png, image/jpeg"
@@ -103,15 +113,15 @@ const downloadCompressedFile = () => {
       <el-icon class="el-icon--upload"><upload-filled /></el-icon>
       <div class="el-upload__text">拖拽或者<em>点击上传</em></div>
       <template #tip>
-        <div class="el-upload__tip bold">
+        <div class="el-upload__tip font-bold">
           支持图片格式：<code>image/png, image/jpeg</code>
         </div>
-        <div class="el-upload__tip bold">仅支持上传一张图片</div>
+        <div class="el-upload__tip font-bold">仅支持上传一张图片</div>
       </template>
     </el-upload>
     <section class="origin-image-info" v-if="originImageFileInfo">
-      <h3 class="margin-top-24">原图片文件信息：</h3>
-      <article class="flex flex-wrap gap-12 margin-top-24">
+      <h3 class="mt-6">原图片文件信息：</h3>
+      <article class="flex flex-wrap gap-3 mt-6">
         <h5 class="flex-none info-item">
           大小: {{ originImageFileInfo.size }}
         </h5>
@@ -125,7 +135,7 @@ const downloadCompressedFile = () => {
     </section>
     <section class="image-compress-params" v-if="originImageFileInfo">
       <h3>压缩后图片参数设置：</h3>
-      <article class="flex flex-wrap gap-12 margin-top-24">
+      <article class="flex flex-wrap gap-3 mt-6">
         <el-input
           class="flex-none"
           v-model="compressedFileParams.maxSize"
@@ -155,7 +165,7 @@ const downloadCompressedFile = () => {
         </el-input>
       </article>
       <el-button
-        class="margin-top-24"
+        class="mt-6"
         type="primary"
         @click="compress"
         :loading="compressLoading"
@@ -164,8 +174,8 @@ const downloadCompressedFile = () => {
       </el-button>
     </section>
     <section class="compressed-image-info" v-if="compressedImageFileInfo">
-      <h3 class="margin-top-24">压缩后的图片信息：</h3>
-      <article class="flex flex-wrap gap-12 margin-top-24">
+      <h3 class="mt-6">压缩后的图片信息：</h3>
+      <article class="flex flex-wrap gap-3 mt-6">
         <h5 class="flex-none info-item">
           大小：{{ compressedImageFileInfo.size }}
         </h5>
@@ -176,12 +186,20 @@ const downloadCompressedFile = () => {
           高度：{{ compressedImageFileInfo.height }}
         </h5>
       </article>
+      <article class="mt-6">
+        <el-image
+          :src="compressedFileUrl"
+          :style="{ height: '100px' }"
+          :preview-src-list="[compressedFileUrl]"
+        ></el-image>
+      </article>
       <el-button
         type="primary"
-        class="margin-top-24"
+        class="mt-6"
         @click="downloadCompressedFile"
-        >下载</el-button
       >
+        下载
+      </el-button>
     </section>
   </section>
 </template>

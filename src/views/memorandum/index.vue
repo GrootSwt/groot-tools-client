@@ -1,16 +1,13 @@
 <script lang="ts" setup>
 import { CopyDocument, Delete } from "@element-plus/icons-vue";
 import { nextTick, onMounted, onBeforeUnmount, ref } from "vue";
-import {
-  IMemorandum,
-  listMemorandumByUserId,
-  deleteMemorandumById,
-} from "../../api/services";
+import service, { IMemorandum } from "../../api/services";
 import { getCookie, removeCookie } from "../../assets/tools";
 import { copyToClipboard } from "../../assets/tools/common";
 import env from "../../assets/env";
 import router from "../../router";
 import { ElMessage } from "element-plus";
+import { requestWrapper } from "@/api/request";
 
 enum LinkStatusEnum {
   loading = "loading",
@@ -163,17 +160,21 @@ const sendMessage = () => {
 // 初始加载获取消息列表
 const messageList = ref<Array<IMemorandum>>([]);
 const getMessageList = (userId: string) => {
-  listMemorandumByUserId(userId)
-    .then((res) => {
+  requestWrapper(
+    async () => {
+      const res = await service.memorandum.listMemorandumByUserId(userId);
       if (res.data) {
         messageList.value = res.data;
-        memorandumContentScrollBottom();
       }
+      memorandumContentScrollBottom();
       connectWebSocket();
-    })
-    .catch(() => {
+    },
+    true,
+    true,
+    () => {
       handleLinkStatus(LinkStatusEnum.failure);
-    });
+    }
+  );
 };
 
 onMounted(() => {
@@ -191,8 +192,10 @@ onBeforeUnmount(() => {
 const content = ref<string>("");
 
 const deleteMessage = (content: IMemorandum) => {
-  if (content.id && content.userId) {
-    deleteMemorandumById(content.id, content.userId).then(() => {
+  const { id, userId } = content;
+  if (id && userId) {
+    requestWrapper(async () => {
+      await service.memorandum.deleteMemorandumById(id, userId);
       ElMessage.success("删除成功");
     });
   }

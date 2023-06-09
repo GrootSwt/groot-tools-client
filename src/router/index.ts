@@ -26,9 +26,7 @@ const router = createRouter({
       path: "/image-compress",
       name: "imageCompress",
       component: () => import("../views/image-compress/index.vue"),
-      meta: {
-        auth: true,
-      },
+      meta: {},
     },
     {
       path: "/:pathMatch(.*)*",

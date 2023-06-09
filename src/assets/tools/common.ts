@@ -87,7 +87,7 @@ export function compressImage(
             targetWidth === originWidth &&
             targetHeight === originHeight
           ) {
-            return resolve(originImageFile);
+            resolve(originImageFile);
           } else {
             let newFile: File | null = null;
             let quality = 0.9;
@@ -100,8 +100,8 @@ export function compressImage(
                 quality
               );
               quality = quality - 0.1;
-              if (quality === 0) {
-                return reject("file is too large");
+              if (quality <= 0) {
+                reject("file is too large");
               }
             } while (newFile && newFile.size / 1024 > maxSize);
             if (newFile) {

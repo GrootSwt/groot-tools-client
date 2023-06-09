@@ -1,7 +1,8 @@
-import axiosInstance, {
+import {
   deleteRequest,
   getRequest,
   IResponse,
+  IResponseData,
 } from "../request";
 
 export interface IMemorandum {
@@ -12,25 +13,23 @@ export interface IMemorandum {
   updateTime?: Date;
 }
 
-export interface ListMemorandumResponse extends IResponse {
-  data?: Array<IMemorandum>;
+export interface ListMemorandumResponse extends IResponseData {
+  data: Array<IMemorandum>;
 }
 
-export function listMemorandumByUserId(
-  userId: string
-): Promise<ListMemorandumResponse> {
-  return getRequest(
-    axiosInstance,
-    `/memorandum/${userId}/listMemorandumByUserId`
-  ) as Promise<ListMemorandumResponse>;
-}
-
-export function deleteMemorandumById(
-  id: string,
-  userId: string
-): Promise<IResponse> {
-  return deleteRequest(
-    axiosInstance,
-    `/memorandum/${id}/${userId}/deleteMemorandumById`
-  ) as Promise<IResponse>;
+export class Memorandum {
+  private baseUrl: string;
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+  listMemorandumByUserId(userId: string) {
+    return getRequest(
+      this.baseUrl + `/memorandum/${userId}/listMemorandumByUserId`
+    ) as Promise<ListMemorandumResponse>;
+  }
+  deleteMemorandumById(id: string, userId: string) {
+    return deleteRequest(
+      this.baseUrl + `/memorandum/${id}/${userId}/deleteMemorandumById`
+    ) as Promise<IResponse>;
+  }
 }

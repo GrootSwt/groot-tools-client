@@ -1,9 +1,18 @@
-import axiosInstance, { postRequest } from "../request";
+import { postRequest } from "../request";
+
 export interface ILoginForm {
   systemPassword?: string;
-  username?: string;
+  account?: string;
   password?: string;
 }
-export function loginRequest(loginForm: ILoginForm) {
-  return postRequest(axiosInstance, "/login", loginForm);
+
+export class Login {
+  private baseUrl: string;
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  postLogin(data: ILoginForm) {
+    return postRequest(this.baseUrl + "/login", data);
+  }
 }
