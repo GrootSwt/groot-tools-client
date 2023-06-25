@@ -23,6 +23,14 @@ const router = createRouter({
       },
     },
     {
+      path: "/chat",
+      name: "chat",
+      component: () => import("../views/chat/index.vue"),
+      meta: {
+        auth: true,
+      },
+    },
+    {
       path: "/image-compress",
       name: "imageCompress",
       component: () => import("../views/image-compress/index.vue"),

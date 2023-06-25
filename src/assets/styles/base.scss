@@ -16,6 +16,30 @@ html {
   }
 }
 
+.custom-loading {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    animation: breath 2.5s ease-in-out infinite;
+    z-index: 1;
+  }
+}
+
+@keyframes breath {
+  0% {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+  100% {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
 ::-webkit-scrollbar {
   display: none;
 }

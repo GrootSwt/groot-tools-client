@@ -1,5 +1,3 @@
-import { ElLoading } from "element-plus";
-import { LoadingInstance } from "element-plus/es/components/loading/src/loading";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
@@ -14,25 +12,21 @@ export const useCommonStore = defineStore("common", () => {
   }
   // global loading
   const globalLoading = ref(false);
-  const loadingInstance = ref<LoadingInstance>();
   const loadingTimer = ref<number>();
 
   function enableGlobalLoading() {
     loadingTimer.value && clearTimeout(loadingTimer.value);
     globalLoading.value = true;
-    loadingInstance.value = ElLoading.service({
-      fullscreen: true,
-      background: "rgba(0, 0, 0, 0.3)",
-    });
+    document.body.classList.add("global-loading");
     // loading过程中阻止键盘中的Tab和Enter键点击事件
     window.addEventListener("keydown", preventClick);
   }
   function disableGlobalLoading() {
     loadingTimer.value = setTimeout(() => {
       globalLoading.value = false;
-      loadingInstance.value?.close();
+      document.body.classList.remove("global-loading");
       window.removeEventListener("keydown", preventClick);
-    }, 100);
+    }, 10000);
   }
   function disableAll() {
     disableAbortRequest();

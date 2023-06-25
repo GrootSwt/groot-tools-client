@@ -1,3 +1,4 @@
+import { BaseService } from "../model";
 import { postRequest } from "../request";
 
 export interface ILoginForm {
@@ -6,13 +7,10 @@ export interface ILoginForm {
   password?: string;
 }
 
-export class Login {
-  private baseUrl: string;
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
-  }
-
+class Login extends BaseService {
   postLogin(data: ILoginForm) {
     return postRequest(this.baseUrl + "/login", data);
   }
 }
+
+export default Login;

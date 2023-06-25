@@ -2,24 +2,12 @@
 import { CopyDocument, Delete } from "@element-plus/icons-vue";
 import { nextTick, onMounted, onBeforeUnmount, ref } from "vue";
 import service, { IMemorandum } from "../../api/services";
-import { getCookie, removeCookie } from "../../assets/tools";
+import { getCookie, scrollToBottom, toLoginPage } from "../../assets/tools";
 import { copyToClipboard } from "../../assets/tools/common";
 import env from "../../assets/env";
-import router from "../../router";
 import { ElMessage } from "element-plus";
 import { requestWrapper } from "@/api/request";
-
-enum LinkStatusEnum {
-  loading = "loading",
-  failure = "failure",
-  success = "success",
-}
-
-enum WebSocketOperationTypeEnum {
-  append = "append",
-  replace = "replace",
-  heartbeat = "heartbeat",
-}
+import { LinkStatusEnum, MemorandumOperationTypeEnum } from "@/api/model";
 
 const ws = ref<WebSocket>();
 
@@ -41,7 +29,7 @@ const handleSendTimeout = () => {
 const heartbeatCheck = () => {
   heartbeatTimer.value = setInterval(() => {
     try {
-      ws.value?.send(WebSocketOperationTypeEnum.heartbeat);
+      ws.value?.send(MemorandumOperationTypeEnum.heartbeat);
       handleSendTimeout();
     } catch (error) {
       handleLinkStatus(LinkStatusEnum.failure);
@@ -68,9 +56,7 @@ const handleLinkStatus = (status: LinkStatusEnum, code?: number) => {
       break;
   }
   if (code === 401) {
-    removeCookie("token");
-    removeCookie("userId");
-    router.replace({ path: "/login" });
+    toLoginPage();
   }
 };
 
@@ -81,8 +67,7 @@ const memorandumContentScrollBottom = () => {
   nextTick(() => {
     const memorandumListEl = memorandumListRef.value;
     if (memorandumListEl) {
-      memorandumListEl.scrollTop =
-        memorandumListEl.scrollHeight - memorandumListEl.clientHeight;
+      scrollToBottom(memorandumListEl);
     }
   });
 };
@@ -90,16 +75,16 @@ const memorandumContentScrollBottom = () => {
 const onMessage = (e: MessageEvent) => {
   clearTimeout(sendTimeoutTimer.value);
   if (e.data) {
-    if (e.data === WebSocketOperationTypeEnum.heartbeat) {
+    if (e.data === MemorandumOperationTypeEnum.heartbeat) {
       return;
     }
     const res = JSON.parse(e.data);
-    if (res.code === 200) {
+    if (res.status === 200) {
       const data = res.data;
       // 消息列表
-      if (res.operationType === WebSocketOperationTypeEnum.replace) {
+      if (res.operationType === MemorandumOperationTypeEnum.replace) {
         messageList.value = data;
-      } else if (res.operationType === WebSocketOperationTypeEnum.append) {
+      } else if (res.operationType === MemorandumOperationTypeEnum.append) {
         // 单条消息
         messageList.value.push(data);
       }
@@ -122,7 +107,7 @@ const onOpen = () => {
 // WebSocket连接服务器
 const connectWebSocket = () => {
   const token = getCookie("token");
-  ws.value = new WebSocket(env.WS_URL, token);
+  ws.value = new WebSocket(env.WS_URL + "/memorandum", token);
   handleSendTimeout();
   ws.value.onopen = onOpen;
   ws.value.onerror = () => handleLinkStatus(LinkStatusEnum.failure);
@@ -147,7 +132,10 @@ const sendMessage = () => {
   const result = content.value.trim();
   if (result) {
     const data = {
-      content: result,
+      operationType: MemorandumOperationTypeEnum.append,
+      params: {
+        content: result,
+      },
     };
     ws.value?.send(JSON.stringify(data));
     handleSendTimeout();

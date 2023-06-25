@@ -1,28 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import router from "@/router";
 import { ElMessage } from "element-plus";
 import { useCommonStore } from "@/store/common";
-import { removeCookie } from "@/assets/tools";
-
-// get delete request params
-export interface IRequestParams {
-  [prop: string]: any;
-}
-// post put request data
-export interface IRequestData {
-  [prop: string]: any;
-}
-// response data
-export interface IResponseData {
-  data?: any;
-  message?: any;
-  [prop: string]: any;
-}
-// response
-export interface IResponse extends AxiosResponse {
-  data: IResponseData;
-}
+import { toLoginPage } from "@/assets/tools";
+import { IRequestData, IRequestParams, IResponse } from "./model";
 
 // abort request
 export const abortController = {
@@ -52,21 +34,6 @@ defaultInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-function toLoginPage() {
-  removeCookie("userId");
-  removeCookie("token");
-  if (router.currentRoute.value.fullPath === "/") {
-    router.replace({ path: "/login" });
-  } else {
-    router.replace({
-      path: "/login",
-      query: {
-        redirect: router.currentRoute.value.fullPath,
-      },
-    });
-  }
-}
 
 /**
  * 默认异常处理器

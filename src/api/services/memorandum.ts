@@ -1,9 +1,5 @@
-import {
-  deleteRequest,
-  getRequest,
-  IResponse,
-  IResponseData,
-} from "../request";
+import { BaseService, IResponse, IResponseData } from "../model";
+import { deleteRequest, getRequest } from "../request";
 
 export interface IMemorandum {
   id?: string;
@@ -13,19 +9,15 @@ export interface IMemorandum {
   updateTime?: Date;
 }
 
-export interface ListMemorandumResponse extends IResponseData {
+export interface IListMemorandumResponse extends IResponseData {
   data: Array<IMemorandum>;
 }
 
-export class Memorandum {
-  private baseUrl: string;
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
-  }
+class Memorandum extends BaseService {
   listMemorandumByUserId(userId: string) {
     return getRequest(
       this.baseUrl + `/memorandum/${userId}/listMemorandumByUserId`
-    ) as Promise<ListMemorandumResponse>;
+    ) as Promise<IListMemorandumResponse>;
   }
   deleteMemorandumById(id: string, userId: string) {
     return deleteRequest(
@@ -33,3 +25,5 @@ export class Memorandum {
     ) as Promise<IResponse>;
   }
 }
+
+export default Memorandum;
