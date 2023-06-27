@@ -16,6 +16,9 @@ import {
   ISendMessageData,
   IWSResponse,
 } from "@/api/model";
+import { useWSStore } from "@/store/ws";
+
+const wsStore = useWSStore();
 
 const friendList = ref<IFriendWithUnreadMsgCount[]>([]);
 async function listFriendWithUnreadMsgCount() {
@@ -52,8 +55,8 @@ onMounted(() => {
       const res2 = await listMessageByFriendId(currentFriend.value.friendId);
       currentFriendMessageList.value = res2.data;
       onMessageBoxScrollToBottom();
-      connectWebSocket();
     }
+    connectWebSocket();
   }).finally(() => {
     messageListLoading.value = false;
   });
@@ -71,10 +74,6 @@ const sendTimeoutTimer = ref<number>();
 const heartbeatTimer = ref<number>();
 // 发送消息禁用状态
 const disabledSend = ref<boolean>(true);
-// 连接状态
-const linkStatus = ref<LinkStatusEnum>(LinkStatusEnum.loading);
-// 连接消息
-const linkMessage = ref<string>("服务器连接中");
 
 const messageBoxRef = ref<HTMLElement>();
 
@@ -188,7 +187,8 @@ function onMessage(e: MessageEvent) {
     if (JSON.parse(e.data).status !== 200) {
       return handleLinkStatus(
         LinkStatusEnum.failure,
-        JSON.parse(e.data).status
+        JSON.parse(e.data).status,
+        JSON.parse(e.data).message
       );
     }
     // 消息已读处理
@@ -222,16 +222,19 @@ function connectWebSocket() {
   ws.value.onopen = onWSOpen;
   ws.value.onerror = () => handleLinkStatus(LinkStatusEnum.failure);
 }
-function handleLinkStatus(status: LinkStatusEnum, code?: number) {
-  linkStatus.value = status;
+function handleLinkStatus(
+  status: LinkStatusEnum,
+  code?: number,
+  message?: string
+) {
   switch (status) {
     case LinkStatusEnum.success:
-      linkMessage.value = "已连接到服务器";
+      wsStore.onChangeLinkInfo(status, "已连接到服务器");
       disabledSend.value = false;
       heartbeatCheck();
       break;
     case LinkStatusEnum.failure:
-      linkMessage.value = "服务器连接断开，请刷新后重试";
+      wsStore.onChangeLinkInfo(status, "服务器连接断开，请刷新后重试");
       disabledSend.value = true;
       clearInterval(heartbeatTimer.value);
       ws.value?.close();
@@ -241,10 +244,10 @@ function handleLinkStatus(status: LinkStatusEnum, code?: number) {
       break;
   }
   if (code === 401) {
-    toLoginPage();
+    toLoginPage(message);
   }
 }
-
+// 已读所有接收到的消息
 function readAllMessage() {
   if (
     currentFriendMessageList.value.filter((message) => {
@@ -288,16 +291,6 @@ function sendMessage() {
   <main
     class="flex flex-col justify-center items-center h-full text-slate-100 text-base"
   >
-    <h3
-      class="p-2 text-gray-90 rounded-lg"
-      :class="{
-        'bg-yellow-500': linkStatus === LinkStatusEnum.loading,
-        'bg-lime-500': linkStatus === LinkStatusEnum.success,
-        'bg-red-500': linkStatus === LinkStatusEnum.failure,
-      }"
-    >
-      {{ linkMessage }}
-    </h3>
     <section
       class="mt-3 flex justify-center items-center h-4/5 w-4/5 max-w-5xl p-6 rounded-3xl bg-slate-500 shadow-xl shadow-black/50"
     >

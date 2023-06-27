@@ -63,7 +63,7 @@ function defaultErrorHandler(error: AxiosError) {
         });
         break;
       case 401:
-        toLoginPage();
+        toLoginPage(response.data.message);
         break;
       case 404:
         router.push("/error/404");

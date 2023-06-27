@@ -8,11 +8,11 @@ import env from "../../assets/env";
 import { ElMessage } from "element-plus";
 import { requestWrapper } from "@/api/request";
 import { LinkStatusEnum, MemorandumOperationTypeEnum } from "@/api/model";
+import { useWSStore } from "@/store/ws";
+
+const wsStore = useWSStore();
 
 const ws = ref<WebSocket>();
-
-const linkStatus = ref<LinkStatusEnum>(LinkStatusEnum.loading);
-const linkMessage = ref<string>("服务器连接中...");
 
 // 是否禁止发送消息
 const disabledSend = ref(true);
@@ -37,16 +37,19 @@ const heartbeatCheck = () => {
   }, 30000);
 };
 
-const handleLinkStatus = (status: LinkStatusEnum, code?: number) => {
-  linkStatus.value = status;
+const handleLinkStatus = (
+  status: LinkStatusEnum,
+  code?: number,
+  message?: string
+) => {
   switch (status) {
     case LinkStatusEnum.success:
-      linkMessage.value = "已连接到服务器";
+      wsStore.onChangeLinkInfo(status, "已连接到服务器");
       disabledSend.value = false;
       heartbeatCheck();
       break;
     case LinkStatusEnum.failure:
-      linkMessage.value = "服务器连接断开，请刷新后重试";
+      wsStore.onChangeLinkInfo(status, "服务器连接断开，请刷新后重试");
       disabledSend.value = true;
       clearInterval(heartbeatTimer.value);
       ws.value?.close();
@@ -56,7 +59,7 @@ const handleLinkStatus = (status: LinkStatusEnum, code?: number) => {
       break;
   }
   if (code === 401) {
-    toLoginPage();
+    toLoginPage(message);
   }
 };
 
@@ -91,7 +94,7 @@ const onMessage = (e: MessageEvent) => {
       // 滚动到底部
       memorandumContentScrollBottom();
     } else {
-      handleLinkStatus(LinkStatusEnum.failure, res.code);
+      handleLinkStatus(LinkStatusEnum.failure, res.status, res.message);
     }
   }
 };
@@ -147,10 +150,10 @@ const sendMessage = () => {
 };
 // 初始加载获取消息列表
 const messageList = ref<Array<IMemorandum>>([]);
-const getMessageList = (userId: string) => {
+const getMessageList = () => {
   requestWrapper(
     async () => {
-      const res = await service.memorandum.listMemorandumByUserId(userId);
+      const res = await service.memorandum.listMemorandum();
       if (res.data) {
         messageList.value = res.data;
       }
@@ -168,7 +171,7 @@ const getMessageList = (userId: string) => {
 onMounted(() => {
   const userId = getCookie("userId");
   if (userId) {
-    getMessageList(userId);
+    getMessageList();
   }
 });
 
@@ -183,7 +186,7 @@ const deleteMessage = (content: IMemorandum) => {
   const { id, userId } = content;
   if (id && userId) {
     requestWrapper(async () => {
-      await service.memorandum.deleteMemorandumById(id, userId);
+      await service.memorandum.deleteMemorandumById(id);
       ElMessage.success("删除成功");
     });
   }
@@ -192,9 +195,6 @@ const deleteMessage = (content: IMemorandum) => {
 <template>
   <div class="memorandum-container">
     <div class="memorandum-box">
-      <header class="memorandum-header" :class="linkStatus">
-        {{ linkMessage }}
-      </header>
       <main ref="memorandumListRef" class="memorandum-main">
         <div class="content-box" v-for="item in messageList" :key="item.id">
           <div v-html="getMessageBody(item.content)"></div>
@@ -253,21 +253,6 @@ const deleteMessage = (content: IMemorandum) => {
     display: flex;
     flex-direction: column;
     border: 1px solid gray;
-    .memorandum-header {
-      flex: none;
-      text-align: center;
-      line-height: 180%;
-      border-bottom: 1px solid gray;
-      &.loading {
-        color: #1a94fa;
-      }
-      &.failure {
-        color: #fe6164;
-      }
-      &.success {
-        color: #50ba3e;
-      }
-    }
     .memorandum-main {
       flex: 1;
       overflow-y: auto;

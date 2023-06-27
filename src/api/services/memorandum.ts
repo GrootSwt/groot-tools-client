@@ -14,14 +14,14 @@ export interface IListMemorandumResponse extends IResponseData {
 }
 
 class Memorandum extends BaseService {
-  listMemorandumByUserId(userId: string) {
+  listMemorandum() {
     return getRequest(
-      this.baseUrl + `/memorandum/${userId}/listMemorandumByUserId`
+      this.baseUrl + `/memorandum/listMemorandum`
     ) as Promise<IListMemorandumResponse>;
   }
-  deleteMemorandumById(id: string, userId: string) {
+  deleteMemorandumById(id: string) {
     return deleteRequest(
-      this.baseUrl + `/memorandum/${id}/${userId}/deleteMemorandumById`
+      this.baseUrl + `/memorandum/${id}/deleteMemorandumById`
     ) as Promise<IResponse>;
   }
 }
