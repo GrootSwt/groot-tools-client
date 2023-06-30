@@ -2,7 +2,7 @@ import { LinkStatusEnum } from "@/api/model";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-export const useWSStore = defineStore("ws", () => {
+const useWSStore = defineStore("ws", () => {
   const isShowLinkInfo = ref(false);
   // websocket连接信息
   const initLinkInfo = {
@@ -35,3 +35,5 @@ export const useWSStore = defineStore("ws", () => {
     onChangeLinkInfo,
   };
 });
+
+export default useWSStore;

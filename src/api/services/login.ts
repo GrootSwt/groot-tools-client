@@ -1,15 +1,22 @@
-import { BaseService } from "../model";
+import { BaseService, IRequestData } from "../model";
 import { postRequest } from "../request";
+import { IUser } from "./user";
 
 export interface ILoginForm {
-  systemPassword?: string;
   account?: string;
   password?: string;
 }
 
+export interface ILoginResponseData extends IRequestData {
+  data: IUser;
+}
+
 class Login extends BaseService {
-  postLogin(data: ILoginForm) {
-    return postRequest(this.baseUrl + "/login", data);
+  login(form: ILoginForm) {
+    return postRequest(
+      this.baseUrl + "/login",
+      form
+    ) as Promise<ILoginResponseData>;
   }
 }
 

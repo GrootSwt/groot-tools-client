@@ -10,22 +10,25 @@ export interface IMessage {
   id: string;
   senderId: string;
   receiverId: string;
-  account: string;
-  displayName?: string;
-  commentName?: string;
   content: string;
   readStatus: ReadStatusEnum;
+  createTime: Date;
 }
 
-export interface IListMessageByFriendIdResponse extends IResponseData {
-  data: Array<IMessage>;
+export interface IListMessageResponseData extends IResponseData {
+  data: {
+    hasPrev: boolean;
+    messageList: Array<IMessage>;
+  };
 }
 
 class Message extends BaseService {
-  listMessageByFriendId(friendId: string) {
+  listMessageByFriendId(friendId: string, prevMessageId?: string) {
+    const params = prevMessageId ? { prevMessageId } : undefined;
     return getRequest(
-      this.baseUrl + `/${friendId}/listMessageByFriendId`
-    ) as Promise<IListMessageByFriendIdResponse>;
+      this.baseUrl + `/${friendId}/listMessage`,
+      params
+    ) as Promise<IListMessageResponseData>;
   }
 }
 

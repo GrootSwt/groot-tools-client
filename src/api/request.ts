@@ -2,7 +2,7 @@
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import router from "@/router";
 import { ElMessage } from "element-plus";
-import { useCommonStore } from "@/store/common";
+import useCommonStore from "@/store/common";
 import { toLoginPage } from "@/assets/tools";
 import { IRequestData, IRequestParams, IResponse } from "./model";
 

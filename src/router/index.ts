@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { getCookie } from "../assets/tools";
+import { getLoginStatus, clearLoginStatusAndUser } from "../assets/tools";
 import { ElMessage } from "element-plus";
-import { useWSStore } from "@/store/ws";
+import useWSStore from "@/store/ws";
 import { storeToRefs } from "pinia";
+import useLoginStore from "@/store/login";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -72,8 +73,10 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const wsStore = useWSStore();
   const { isShowLinkInfo } = storeToRefs(useWSStore());
-  const token = getCookie("token");
-  if (to.meta?.auth && !token) {
+  const { isLogin } = storeToRefs(useLoginStore());
+  isLogin.value = getLoginStatus();
+  if (to.meta?.auth && !isLogin.value) {
+    clearLoginStatusAndUser();
     ElMessage.warning({
       message: "该功能需要登录，请登录后使用",
     });

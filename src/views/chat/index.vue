@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import service, {
   ReadStatusEnum,
   IFriend,
@@ -7,7 +7,12 @@ import service, {
   IMessage,
 } from "@/api/services";
 import { requestWrapper } from "@/api/request";
-import { getCookie, scrollToBottom, toLoginPage } from "@/assets/tools";
+import {
+  getCookie,
+  scrollToBottom,
+  toLoginPage,
+  formatDateTime,
+} from "@/assets/tools";
 import env from "@/assets/env";
 import {
   ChatOperationTypeEnum,
@@ -16,7 +21,9 @@ import {
   ISendMessageData,
   IWSResponse,
 } from "@/api/model";
-import { useWSStore } from "@/store/ws";
+import useWSStore from "@/store/ws";
+import { dayjs } from "element-plus";
+import loadingIcon from "@/assets/images/loading.svg";
 
 const wsStore = useWSStore();
 
@@ -26,12 +33,57 @@ async function listFriendWithUnreadMsgCount() {
 }
 
 const currentFriend = ref<IFriendWithUnreadMsgCount>();
+const hasPrev = ref<boolean>(false);
 const currentFriendMessageList = ref<IMessage[]>([]);
+
+interface IMessageWithIsShowTime extends IMessage {
+  isShowTime: boolean;
+}
+// 渲染的消息列表
+const messageList = computed<IMessageWithIsShowTime[]>(() => {
+  const result: IMessageWithIsShowTime[] = [];
+  currentFriendMessageList.value.forEach((message) => {
+    result.push({
+      ...message,
+      isShowTime: true,
+    });
+  });
+  result.reduce(
+    (
+      previous: IMessageWithIsShowTime | null,
+      current: IMessageWithIsShowTime
+    ) => {
+      if (!previous) {
+        current.isShowTime = true;
+      } else if (
+        // 与上一条消息的时间差少于120秒（2分钟），不显示当前消息的时间
+        dayjs(current.createTime).unix() - dayjs(previous.createTime).unix() <
+        120
+      ) {
+        current.isShowTime = false;
+      }
+
+      return current;
+    },
+    null
+  );
+  return result;
+});
+// 未读的消息id列表
+const unreadMessageIds = computed<string[]>(() => {
+  return currentFriendMessageList.value
+    .filter(
+      (message) =>
+        message.senderId === currentFriend.value?.friendId &&
+        message.readStatus === ReadStatusEnum.unread
+    )
+    .map((message) => message.id);
+});
 const messageListLoading = ref<boolean>(false);
 async function listMessageByFriendId(friendId: string) {
   return await service.message.listMessageByFriendId(friendId);
 }
-
+// 切换当前朋友和消息列表
 function onChangeCurrentFriend(friend: IFriend) {
   if (friend.id === currentFriend.value?.id) return;
   requestWrapper(async () => {
@@ -39,13 +91,17 @@ function onChangeCurrentFriend(friend: IFriend) {
     currentFriendMessageList.value = [];
     messageListLoading.value = true;
     const res = await listMessageByFriendId(currentFriend.value.friendId);
-    currentFriendMessageList.value = res.data;
+    hasPrev.value = res.data.hasPrev;
+    currentFriendMessageList.value = res.data.messageList;
+    onMessageBoxScrollToBottom();
   }, false).finally(() => {
     messageListLoading.value = false;
   });
 }
 
-onMounted(() => {
+// 初始化
+// 获取朋友列表和第一个朋友的消息列表
+function init() {
   requestWrapper(async () => {
     const res = await listFriendWithUnreadMsgCount();
     friendList.value = res.data;
@@ -53,19 +109,15 @@ onMounted(() => {
       currentFriend.value = friendList.value[0];
       messageListLoading.value = true;
       const res2 = await listMessageByFriendId(currentFriend.value.friendId);
-      currentFriendMessageList.value = res2.data;
+      hasPrev.value = res2.data.hasPrev;
+      currentFriendMessageList.value = res2.data.messageList;
       onMessageBoxScrollToBottom();
     }
     connectWebSocket();
   }).finally(() => {
     messageListLoading.value = false;
   });
-});
-
-onUnmounted(() => {
-  clearTimeout(sendTimeoutTimer.value);
-  clearInterval(heartbeatTimer.value);
-});
+}
 
 const ws = ref<WebSocket>();
 // 发送超时timer
@@ -74,12 +126,56 @@ const sendTimeoutTimer = ref<number>();
 const heartbeatTimer = ref<number>();
 // 发送消息禁用状态
 const disabledSend = ref<boolean>(true);
+// 消息列表
+const messageListRef = ref<HTMLElement>();
+// 获取以前的消息
+const fetchPrevMessageLoading = ref(false);
+async function fetchPrevMessageList() {
+  const currentFriendId = currentFriend.value?.friendId;
+  if (currentFriendId && currentFriendMessageList.value.length > 0) {
+    const firstMessageId = currentFriendMessageList.value[0].id;
+    fetchPrevMessageLoading.value = true;
+    await requestWrapper(
+      async () => {
+        const res = await service.message.listMessageByFriendId(
+          currentFriendId,
+          firstMessageId
+        );
+        hasPrev.value = res.data.hasPrev;
+        currentFriendMessageList.value = [
+          ...res.data.messageList,
+          ...currentFriendMessageList.value,
+        ];
+        fetchPrevMessageLoading.value = false;
+      },
+      false,
+      true,
+      () => {
+        fetchPrevMessageLoading.value = false;
+        return false;
+      }
+    );
+  }
+}
 
-const messageBoxRef = ref<HTMLElement>();
+async function onMessageListScroll() {
+  const messageListEl = messageListRef.value;
+  if (!fetchPrevMessageLoading.value && hasPrev.value && !!messageListEl) {
+    if (messageListEl.scrollTop === 0) {
+      const prevScrollHeight = messageListEl.scrollHeight;
+      await fetchPrevMessageList();
+      nextTick(() => {
+        const nextScrollHeight = messageListEl.scrollHeight;
+        console.log(prevScrollHeight, nextScrollHeight);
+        messageListEl.scrollTop = nextScrollHeight - prevScrollHeight;
+      });
+    }
+  }
+}
 
 function onMessageBoxScrollToBottom() {
   nextTick(() => {
-    messageBoxRef.value && scrollToBottom(messageBoxRef.value);
+    messageListRef.value && scrollToBottom(messageListRef.value);
   });
 }
 
@@ -100,84 +196,43 @@ function heartbeatCheck() {
     }
   }, 30000);
 }
+// 消息已读ws接收消息处理器
 function onMessageReadHandler(response: IWSResponse<IMessageReadData>) {
   const messageReadData = response.data;
-  const senderId = messageReadData.senderId;
-  const receiverId = messageReadData.receiverId;
-  const userId = getCookie("userId");
-  if (userId === senderId) {
-    const unreadMessageCount = messageReadData.messageList.filter(
-      (message) =>
-        message.senderId === receiverId &&
-        message.receiverId === userId &&
-        message.readStatus === ReadStatusEnum.unread
-    ).length;
-    friendList.value.map((friend) => {
-      if (friend.friendId === receiverId) {
-        friend.unreadMessageCount = unreadMessageCount;
+  const { friendId, readMessageIds, unreadCount } = messageReadData;
+  if (currentFriend.value?.friendId === friendId) {
+    currentFriend.value.unreadMessageCount = unreadCount;
+    currentFriendMessageList.value.forEach((message) => {
+      if (
+        readMessageIds.find((readMessageId) => readMessageId === message.id)
+      ) {
+        message.readStatus = ReadStatusEnum.read;
       }
     });
-  } else if (userId === receiverId) {
-    const unreadMessageCount = messageReadData.messageList.filter(
-      (message) =>
-        message.senderId === senderId &&
-        message.receiverId === userId &&
-        message.readStatus === ReadStatusEnum.unread
-    ).length;
-    friendList.value.map((friend) => {
-      if (friend.friendId === senderId) {
-        friend.unreadMessageCount = unreadMessageCount;
-      }
-    });
-  }
-  if (
-    currentFriend.value?.friendId === senderId ||
-    currentFriend.value?.friendId === receiverId
-  ) {
-    currentFriendMessageList.value = messageReadData.messageList;
+  } else {
+    const senderFriend = friendList.value.find(
+      (friend) => friend.friendId === friendId
+    );
+    if (senderFriend) {
+      senderFriend.unreadMessageCount = unreadCount;
+    }
   }
 }
-
+// 发送消息ws接收消息处理器
 function onSendMessageHandler(response: IWSResponse<ISendMessageData>) {
   const messageReadData = response.data;
-  const senderId = messageReadData.senderId;
-  const receiverId = messageReadData.receiverId;
-  const userId = getCookie("userId");
-  if (userId === senderId) {
-    const unreadMessageCount = messageReadData.messageList.filter(
-      (message) =>
-        message.senderId === receiverId &&
-        message.receiverId === userId &&
-        message.readStatus === ReadStatusEnum.unread
-    ).length;
-    friendList.value.map((friend) => {
-      if (friend.friendId === receiverId) {
-        friend.unreadMessageCount = unreadMessageCount;
-      }
-    });
-  } else if (userId === receiverId) {
-    const unreadMessageCount = messageReadData.messageList.filter(
-      (message) =>
-        message.senderId === senderId &&
-        message.receiverId === userId &&
-        message.readStatus === ReadStatusEnum.unread
-    ).length;
-    friendList.value.map((friend) => {
-      if (friend.friendId === senderId) {
-        friend.unreadMessageCount = unreadMessageCount;
-      }
-    });
+  const { friendId, message, unreadMessageCount } = messageReadData;
+  if (currentFriend.value?.friendId === friendId) {
+    currentFriendMessageList.value.push(message);
   }
-  if (
-    currentFriend.value?.friendId === senderId ||
-    currentFriend.value?.friendId === receiverId
-  ) {
-    currentFriendMessageList.value = messageReadData.messageList;
+  const friend = friendList.value.find((f) => f.friendId === friendId);
+  if (friend) {
+    friend.unreadMessageCount = unreadMessageCount;
   }
 
   onMessageBoxScrollToBottom();
 }
-// 接收消息
+// ws接收消息
 function onMessage(e: MessageEvent) {
   clearTimeout(sendTimeoutTimer.value);
   if (e.data) {
@@ -205,7 +260,6 @@ function onMessage(e: MessageEvent) {
     }
   }
 }
-
 // WebSocket连接成功
 function onWSOpen() {
   handleLinkStatus(LinkStatusEnum.success);
@@ -215,6 +269,7 @@ function onWSOpen() {
     ws.value.onclose = () => handleLinkStatus(LinkStatusEnum.failure);
   }
 }
+// 连接websocket
 function connectWebSocket() {
   const token = getCookie("token");
   ws.value = new WebSocket(env.WS_URL + "/chat", token);
@@ -249,26 +304,17 @@ function handleLinkStatus(
 }
 // 已读所有接收到的消息
 function readAllMessage() {
-  if (
-    currentFriendMessageList.value.filter((message) => {
-      return (
-        message.senderId === currentFriend.value?.friendId &&
-        message.receiverId === currentFriend.value?.userId &&
-        message.readStatus === ReadStatusEnum.unread
-      );
-    }).length === 0
-  )
-    return;
+  if (unreadMessageIds.value.length === 0) return;
   const request = {
     operationType: ChatOperationTypeEnum.read,
     params: {
-      senderId: currentFriend.value?.friendId,
-      receiverId: currentFriend.value?.userId,
+      friendId: currentFriend.value?.friendId,
+      unreadMessageIds: unreadMessageIds.value,
     },
   };
   ws.value?.send(JSON.stringify(request));
 }
-
+// 发送消息
 const messageBody = ref<string>();
 function sendMessage() {
   if (messageBody.value?.trim()) {
@@ -277,8 +323,7 @@ function sendMessage() {
       JSON.stringify({
         operationType: ChatOperationTypeEnum.send,
         params: {
-          senderId: currentFriend.value?.userId,
-          receiverId: currentFriend.value?.friendId,
+          friendId: currentFriend.value?.friendId,
           message,
         },
       })
@@ -286,18 +331,30 @@ function sendMessage() {
     messageBody.value = "";
   }
 }
+
+onMounted(() => {
+  init();
+  messageListRef.value?.addEventListener("scroll", onMessageListScroll);
+});
+
+onBeforeUnmount(() => {
+  messageListRef.value?.removeEventListener("scroll", onMessageListScroll);
+  ws.value && ws.value.close();
+  clearTimeout(sendTimeoutTimer.value);
+  clearInterval(heartbeatTimer.value);
+});
 </script>
 <template>
   <main
     class="flex flex-col justify-center items-center h-full text-slate-100 text-base"
   >
     <section
-      class="mt-3 flex justify-center items-center h-4/5 w-4/5 max-w-5xl p-6 rounded-3xl bg-slate-500 shadow-xl shadow-black/50"
+      class="mt-3 flex justify-center gap-6 items-center h-4/5 w-4/5 max-w-5xl p-6 rounded-3xl bg-slate-300 shadow-xl shadow-slate-400/50"
     >
+      <!-- friend list -->
       <article
-        class="flex flex-col gap-3 w-1/4 h-full rounded-3xl bg-slate-700 shadow-xl shadow-black/50 py-6 overflow-y-auto"
+        class="flex flex-col gap-3 w-1/4 h-full rounded-3xl bg-slate-500 shadow-xl shadow-slate-600/50 py-6 overflow-y-auto"
       >
-        <!-- friend list -->
         <div
           v-for="friend of friendList"
           :key="friend.id"
@@ -305,10 +362,9 @@ function sendMessage() {
           @click="onChangeCurrentFriend(friend)"
         >
           <article
-            class="text-center text-ellipsis overflow-hidden rounded-xl whitespace-nowrap cursor-pointer mx-6 px-3 py-1.5 mt-3"
+            class="text-center text-ellipsis overflow-hidden rounded-xl whitespace-nowrap cursor-pointer mx-6 px-3 py-1.5 mt-3 bg-green-800"
             :class="{
-              'bg-teal-600': currentFriend?.id !== friend.id,
-              'bg-pink-600': currentFriend?.id === friend.id,
+              '!bg-green-600': currentFriend?.id === friend.id,
             }"
           >
             {{ friend.commentName || friend.displayName || friend.account }}
@@ -321,46 +377,69 @@ function sendMessage() {
           </span>
         </div>
       </article>
+      <!-- 消息列表和textarea -->
       <article
-        class="flex flex-col flex-1 ml-6 w-3/5 h-full rounded-3xl p-6 bg-slate-700 shadow-xl shadow-black/50"
+        class="flex flex-col flex-1 gap-6 py-6 w-3/5 h-full rounded-3xl bg-slate-500 shadow-xl shadow-slate-600/50"
         :class="{ 'custom-loading': messageListLoading }"
         @click="readAllMessage"
       >
         <section
-          ref="messageBoxRef"
-          class="flex flex-col gap-3 flex-1 overflow-y-auto"
+          class="flex justify-center h-0 transition-[height]"
+          :class="{
+            '!h-6': fetchPrevMessageLoading,
+          }"
         >
-          <article
-            v-for="message of currentFriendMessageList"
-            :key="message.id"
-            class="inline-flex flex-col w-max"
-            :class="{
-              'self-end': message.senderId !== currentFriend?.friendId,
-            }"
-          >
-            <p
-              class="p-2 text-neutral-900 w-max rounded-lg"
-              :class="{
-                'bg-lime-200': message.senderId === currentFriend?.friendId,
-                'bg-emerald-200': message.senderId !== currentFriend?.friendId,
-              }"
-            >
-              {{ message.content }}
-            </p>
-            <span
-              class="text-sm text-right mt-1"
-              :class="{
-                'text-lime-200': message.senderId === currentFriend?.friendId,
-                'text-emerald-200':
-                  message.senderId !== currentFriend?.friendId,
-                'text-red-200': message.readStatus === ReadStatusEnum.unread,
-              }"
-            >
-              {{ message.readStatus === ReadStatusEnum.read ? "已读" : "未读" }}
-            </span>
-          </article>
+          <img :src="loadingIcon" alt="" class="h-full animate-spin" />
         </section>
-        <section class="flex flex-none justify-center items-center mt-6">
+        <!-- message list -->
+        <section
+          ref="messageListRef"
+          class="flex flex-col gap-3 flex-1 overflow-y-auto px-6"
+        >
+          <div
+            class="flex flex-col"
+            v-for="message of messageList"
+            :key="message.id"
+          >
+            <p v-if="message.isShowTime" class="self-center text-sm">
+              {{ formatDateTime(message.createTime) }}
+            </p>
+            <article
+              class="inline-flex flex-col w-max"
+              :class="{
+                'self-end': message.senderId !== currentFriend?.friendId,
+              }"
+            >
+              <!-- 消息内容 -->
+              <p
+                class="p-2 text-neutral-900 w-max rounded-lg"
+                :class="{
+                  'bg-lime-200': message.senderId === currentFriend?.friendId,
+                  'bg-emerald-200':
+                    message.senderId !== currentFriend?.friendId,
+                }"
+              >
+                {{ message.content }}
+              </p>
+              <!-- 消息读取状态标签 -->
+              <span
+                class="text-sm text-right mt-1"
+                :class="{
+                  'text-lime-300': message.senderId === currentFriend?.friendId,
+                  'text-emerald-300':
+                    message.senderId !== currentFriend?.friendId,
+                  '!text-red-300': message.readStatus === ReadStatusEnum.unread,
+                }"
+              >
+                {{
+                  message.readStatus === ReadStatusEnum.read ? "已读" : "未读"
+                }}
+              </span>
+            </article>
+          </div>
+        </section>
+        <!-- message textarea -->
+        <section class="flex flex-none justify-center items-center px-6">
           <el-input type="textarea" v-model="messageBody"></el-input>
           <el-button class="ml-3 h-full" @click="sendMessage">发送</el-button>
         </section>

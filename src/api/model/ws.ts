@@ -25,13 +25,13 @@ export interface IWSResponse<T> {
 }
 
 export interface IMessageReadData {
-  senderId: string;
-  receiverId: string;
-  messageList: IMessage[];
+  friendId: string;
+  readMessageIds: string[];
+  unreadCount: number;
 }
 
 export interface ISendMessageData {
-  senderId: string;
-  receiverId: string;
-  messageList: IMessage[];
+  friendId: string;
+  message: IMessage;
+  unreadMessageCount: number;
 }

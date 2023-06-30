@@ -9,7 +9,7 @@ export interface IMemorandum {
   updateTime?: Date;
 }
 
-export interface IListMemorandumResponse extends IResponseData {
+export interface IListMemorandumResponseData extends IResponseData {
   data: Array<IMemorandum>;
 }
 
@@ -17,7 +17,7 @@ class Memorandum extends BaseService {
   listMemorandum() {
     return getRequest(
       this.baseUrl + `/memorandum/listMemorandum`
-    ) as Promise<IListMemorandumResponse>;
+    ) as Promise<IListMemorandumResponseData>;
   }
   deleteMemorandumById(id: string) {
     return deleteRequest(

@@ -8,6 +8,7 @@ import Login from "./login";
 import Memorandum from "./memorandum";
 import Friend from "./friend";
 import Message from "./message";
+import User from "./user";
 
 const baseUrl = env.BASE_URL;
 
@@ -16,6 +17,7 @@ const service = {
   memorandum: new Memorandum(baseUrl),
   friend: new Friend(baseUrl + "/friend"),
   message: new Message(baseUrl + "/message"),
+  user: new User(baseUrl + "/user"),
 };
 
 export default service;

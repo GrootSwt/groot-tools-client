@@ -14,11 +14,12 @@ export interface IFriendWithUnreadMsgCount extends IFriend {
   unreadMessageCount?: number;
 }
 
-export interface IListFriendResponse extends IResponseData {
+export interface IListFriendResponseData extends IResponseData {
   data: Array<IFriend>;
 }
 
-export interface IListFriendWithUnreadMsgCountResponse extends IResponseData {
+export interface IListFriendWithUnreadMsgCountResponseData
+  extends IResponseData {
   data: Array<IFriendWithUnreadMsgCount>;
 }
 
@@ -26,12 +27,12 @@ class Friend extends BaseService {
   listFriend() {
     return getRequest(
       this.baseUrl + "/listFriend"
-    ) as Promise<IListFriendResponse>;
+    ) as Promise<IListFriendResponseData>;
   }
   listFriendWithUnreadMsgCount() {
     return getRequest(
       this.baseUrl + "/listFriendWithUnreadMsgCount"
-    ) as Promise<IListFriendWithUnreadMsgCountResponse>;
+    ) as Promise<IListFriendWithUnreadMsgCountResponseData>;
   }
 }
 

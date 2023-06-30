@@ -5,6 +5,9 @@ import service, { ILoginForm } from "@/api/services";
 import router from "../router";
 import { useRoute } from "vue-router";
 import { requestWrapper } from "@/api/request";
+import useUserStore from "@/store/user";
+import { storeToRefs } from "pinia";
+const { user } = storeToRefs(useUserStore());
 
 const route = useRoute();
 
@@ -23,7 +26,8 @@ const login = () => {
   loginFormRef.value?.validate((valid) => {
     if (valid) {
       requestWrapper(async () => {
-        await service.login.postLogin(loginForm);
+        const res = await service.login.login(loginForm);
+        user.value = res.data;
         router.push({ path: redirect ? (redirect as string) : "/" });
       });
     }

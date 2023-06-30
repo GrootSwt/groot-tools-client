@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-export const useCommonStore = defineStore("common", () => {
+const useCommonStore = defineStore("common", () => {
   // abort request
   const abortRequest = ref(false);
   function enableAbortRequest() {
@@ -49,3 +49,5 @@ function preventClick(e: KeyboardEvent) {
     e.preventDefault();
   }
 }
+
+export default useCommonStore;

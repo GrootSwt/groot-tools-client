@@ -8,7 +8,7 @@ import env from "../../assets/env";
 import { ElMessage } from "element-plus";
 import { requestWrapper } from "@/api/request";
 import { LinkStatusEnum, MemorandumOperationTypeEnum } from "@/api/model";
-import { useWSStore } from "@/store/ws";
+import useWSStore from "@/store/ws";
 
 const wsStore = useWSStore();
 
@@ -169,14 +169,12 @@ const getMessageList = () => {
 };
 
 onMounted(() => {
-  const userId = getCookie("userId");
-  if (userId) {
-    getMessageList();
-  }
+  getMessageList();
 });
 
 onBeforeUnmount(() => {
   ws.value && ws.value.close();
+  clearTimeout(sendTimeoutTimer.value);
   clearInterval(heartbeatTimer.value);
 });
 
@@ -252,7 +250,6 @@ const deleteMessage = (content: IMemorandum) => {
     max-width: 500px;
     display: flex;
     flex-direction: column;
-    border: 1px solid gray;
     .memorandum-main {
       flex: 1;
       overflow-y: auto;
@@ -280,7 +277,6 @@ const deleteMessage = (content: IMemorandum) => {
     .memorandum-footer {
       flex: none;
       display: flex;
-      border-top: 1px solid gray;
       :deep(.el-textarea__inner) {
         resize: none;
         border: none;
@@ -291,15 +287,7 @@ const deleteMessage = (content: IMemorandum) => {
         position: relative;
         display: flex;
         flex-direction: column;
-        border-left: 1px solid gray;
         margin-left: 4px;
-        .split-line {
-          position: absolute;
-          width: 100%;
-          height: 1px;
-          background-color: gray;
-          top: calc(50% - 1px);
-        }
         .el-button {
           border: none;
           margin-left: 0;
