@@ -1,5 +1,5 @@
 {
-  "name": "groot-tools",
+  "name": "groot-tools-client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
