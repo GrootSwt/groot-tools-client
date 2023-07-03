@@ -63,9 +63,8 @@ const router = createRouter({
     },
     {
       path: "/:pathMatch(.*)*",
-      redirect: {
-        name: "home",
-      },
+      name: "error",
+      component: () => import("../views/ErrorView.vue"),
     },
   ],
 });
@@ -86,7 +85,7 @@ router.beforeEach((to, from, next) => {
     next({ path: "/login", query: { redirect: to.fullPath } });
   } else {
     // 设置title
-    document.title = `GROOT-TOOLS: ${to.meta.title || ""}`;
+    document.title = `GROOT-TOOLS ${to.meta.title ? ": " + to.meta.title : ""}`;
     isShowLinkInfo.value = !!to.meta.isShowWSLinkInfo;
     next();
   }

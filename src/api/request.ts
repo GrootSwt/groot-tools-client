@@ -51,7 +51,9 @@ function defaultErrorHandler(error: AxiosError) {
         });
         break;
       default:
-        router.push("/error/other");
+        router.push({
+          path: "/error",
+        });
         break;
     }
   } else {
@@ -66,15 +68,24 @@ function defaultErrorHandler(error: AxiosError) {
         toLoginPage(response.data.message);
         break;
       case 404:
-        router.push("/error/404");
+        router.push({
+          path: "/error",
+          query: {
+            status: 404,
+          },
+        });
         break;
       case 500:
       case 503:
       case 504:
-        router.push("/error/" + response.status);
+        router.push({
+          path: "/error",
+        });
         break;
       default:
-        router.push("/error/other");
+        router.push({
+          path: "/error",
+        });
         break;
     }
   }

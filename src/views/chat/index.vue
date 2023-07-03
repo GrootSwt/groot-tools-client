@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import service, {
   ReadStatusEnum,
   IFriend,
@@ -24,6 +31,12 @@ import {
 import useWSStore from "@/store/ws";
 import { dayjs } from "element-plus";
 import loadingIcon from "@/assets/images/loading.svg";
+import useCommonStore from "@/store/common";
+import { storeToRefs } from "pinia";
+import FriendList from "./components/FriendList.vue";
+import hamburgerIcon from "@/assets/images/hamburger.svg";
+
+const { isSP } = storeToRefs(useCommonStore());
 
 const wsStore = useWSStore();
 
@@ -85,7 +98,10 @@ async function listMessageByFriendId(friendId: string) {
 }
 // 切换当前朋友和消息列表
 function onChangeCurrentFriend(friend: IFriend) {
-  if (friend.id === currentFriend.value?.id) return;
+  if (friend.id === currentFriend.value?.id) {
+    isSP.value && onToggleShowFriendListVisible();
+    return;
+  }
   requestWrapper(async () => {
     currentFriend.value = friend;
     currentFriendMessageList.value = [];
@@ -94,6 +110,7 @@ function onChangeCurrentFriend(friend: IFriend) {
     hasPrev.value = res.data.hasPrev;
     currentFriendMessageList.value = res.data.messageList;
     onMessageBoxScrollToBottom();
+    isSP.value && onToggleShowFriendListVisible();
   }, false).finally(() => {
     messageListLoading.value = false;
   });
@@ -166,7 +183,6 @@ async function onMessageListScroll() {
       await fetchPrevMessageList();
       nextTick(() => {
         const nextScrollHeight = messageListEl.scrollHeight;
-        console.log(prevScrollHeight, nextScrollHeight);
         messageListEl.scrollTop = nextScrollHeight - prevScrollHeight;
       });
     }
@@ -332,6 +348,29 @@ function sendMessage() {
   }
 }
 
+const showFriendListVisible = ref<boolean>(false);
+function onToggleShowFriendListVisible(visible?: boolean) {
+  if (typeof visible === "boolean") {
+    showFriendListVisible.value = visible;
+    return;
+  }
+  showFriendListVisible.value = !showFriendListVisible.value;
+}
+
+function onShowFriendList() {
+  showFriendListVisible.value = true;
+}
+
+watch(
+  () => isSP.value,
+  (next) => {
+    onToggleShowFriendListVisible(!next);
+  },
+  {
+    immediate: true,
+  }
+);
+
 onMounted(() => {
   init();
   messageListRef.value?.addEventListener("scroll", onMessageListScroll);
@@ -348,45 +387,45 @@ onBeforeUnmount(() => {
   <main
     class="flex flex-col justify-center items-center h-full text-slate-100 text-base"
   >
+    <!-- 响应式为sp的时候显示查看朋友列表按钮 -->
+    <el-button
+      circle
+      class="fixed z-10 left-4 top-16"
+      :class="{
+        '!hidden': !isSP,
+      }"
+      @click="onShowFriendList"
+    >
+      <template #icon>
+        <img :src="hamburgerIcon" alt="" />
+      </template>
+    </el-button>
     <section
       class="mt-3 flex justify-center gap-6 items-center h-4/5 w-4/5 max-w-5xl p-6 rounded-3xl bg-slate-300 shadow-xl shadow-slate-400/50"
+      :class="{
+        '!block !mt-0 h-full w-full !p-0 max-w-full rounded-none': isSP,
+      }"
     >
       <!-- friend list -->
-      <article
-        class="flex flex-col gap-3 w-1/4 h-full rounded-3xl bg-slate-500 shadow-xl shadow-slate-600/50 py-6 overflow-y-auto"
-      >
-        <div
-          v-for="friend of friendList"
-          :key="friend.id"
-          class="relative"
-          @click="onChangeCurrentFriend(friend)"
-        >
-          <article
-            class="text-center text-ellipsis overflow-hidden rounded-xl whitespace-nowrap cursor-pointer mx-6 px-3 py-1.5 mt-3 bg-green-800"
-            :class="{
-              '!bg-green-600': currentFriend?.id === friend.id,
-            }"
-          >
-            {{ friend.commentName || friend.displayName || friend.account }}
-          </article>
-          <span
-            v-if="friend.unreadMessageCount"
-            class="absolute top-0 right-3 bg-red-800 w-6 text-center rounded-full"
-          >
-            {{ friend.unreadMessageCount }}
-          </span>
-        </div>
-      </article>
+      <FriendList
+        :visible="showFriendListVisible"
+        :friend-list="friendList"
+        :current-friend="currentFriend"
+        @on-change-current-friend="onChangeCurrentFriend"
+      ></FriendList>
       <!-- 消息列表和textarea -->
       <article
         class="flex flex-col flex-1 gap-6 py-6 w-3/5 h-full rounded-3xl bg-slate-500 shadow-xl shadow-slate-600/50"
-        :class="{ 'custom-loading': messageListLoading }"
+        :class="{
+          'custom-loading': messageListLoading,
+          '!gap-3 w-full !pt-0 !pb-3 rounded-none': isSP,
+        }"
         @click="readAllMessage"
       >
         <section
-          class="flex justify-center h-0 transition-[height]"
+          class="hidden justify-center h-0 transition-[height]"
           :class="{
-            '!h-6': fetchPrevMessageLoading,
+            '!flex !h-6': fetchPrevMessageLoading,
           }"
         >
           <img :src="loadingIcon" alt="" class="h-full animate-spin" />
@@ -395,6 +434,9 @@ onBeforeUnmount(() => {
         <section
           ref="messageListRef"
           class="flex flex-col gap-3 flex-1 overflow-y-auto px-6"
+          :class="{
+            '!px-3': isSP,
+          }"
         >
           <div
             class="flex flex-col"
@@ -439,7 +481,12 @@ onBeforeUnmount(() => {
           </div>
         </section>
         <!-- message textarea -->
-        <section class="flex flex-none justify-center items-center px-6">
+        <section
+          class="flex flex-none justify-center items-center px-6"
+          :class="{
+            '!px-3': isSP,
+          }"
+        >
           <el-input type="textarea" v-model="messageBody"></el-input>
           <el-button class="ml-3 h-full" @click="sendMessage">发送</el-button>
         </section>

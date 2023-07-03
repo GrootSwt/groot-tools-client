@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 const useCommonStore = defineStore("common", () => {
   // abort request
@@ -32,6 +32,18 @@ const useCommonStore = defineStore("common", () => {
     disableAbortRequest();
     disableGlobalLoading();
   }
+  // 屏幕宽度
+  const windowWidth = ref<number>(0);
+  function onWindowWidthListener() {
+    windowWidth.value = window.innerWidth;
+    window.addEventListener("resize", () => {
+      windowWidth.value = window.innerWidth;
+    });
+  }
+  // 响应式是否切换到sp
+  const isSP = computed(() => {
+    return windowWidth.value <= 1000;
+  });
   return {
     abortRequest,
     enableAbortRequest,
@@ -40,6 +52,9 @@ const useCommonStore = defineStore("common", () => {
     enableGlobalLoading,
     disableGlobalLoading,
     disableAll,
+    windowWidth,
+    onWindowWidthListener,
+    isSP,
   };
 });
 
