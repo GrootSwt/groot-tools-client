@@ -1,4 +1,4 @@
-import { IMessage } from "../services";
+import { IMemorandum, IMessage } from "../services";
 
 export enum LinkStatusEnum {
   loading = "loading",
@@ -6,32 +6,35 @@ export enum LinkStatusEnum {
   success = "success",
 }
 
-export enum MemorandumOperationTypeEnum {
+export enum WSOperationTypeEnum {
   heartbeat = "heartbeat",
-  append = "append",
-  replace = "replace",
+  chat_read = "read",
+  chat_send = "send",
+  memorandum_append = "append",
+  memorandum_replace = "replace",
 }
 
-export enum ChatOperationTypeEnum {
-  heartbeat = "heartbeat",
-  read = "read",
-  send = "send",
+export interface IWSResponseData {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [prop: string]: any;
 }
 
 export interface IWSResponse<T> {
   status: number;
-  operationType: ChatOperationTypeEnum;
+  message: string;
+  operationType: WSOperationTypeEnum;
   data: T;
 }
 
-export interface IMessageReadData {
+export interface IMessageReadData extends IWSResponseData {
   friendId: string;
   readMessageIds: string[];
   unreadCount: number;
 }
-
-export interface ISendMessageData {
+export interface ISendMessageData extends IWSResponseData {
   friendId: string;
   message: IMessage;
   unreadMessageCount: number;
 }
+
+export interface IMemorandumData extends IMemorandum, IWSResponseData {}

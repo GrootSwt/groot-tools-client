@@ -14,31 +14,35 @@ import service, {
   IMessage,
 } from "@/api/services";
 import { requestWrapper } from "@/api/request";
+import { scrollToBottom, formatDateTime } from "@/assets/tools";
 import {
-  getCookie,
-  scrollToBottom,
-  toLoginPage,
-  formatDateTime,
-} from "@/assets/tools";
-import env from "@/assets/env";
-import {
-  ChatOperationTypeEnum,
-  LinkStatusEnum,
+  WSOperationTypeEnum,
   IMessageReadData,
   ISendMessageData,
   IWSResponse,
+  IWSResponseData,
+  LinkStatusEnum,
 } from "@/api/model";
-import useWSStore from "@/store/ws";
 import { dayjs } from "element-plus";
 import loadingIcon from "@/assets/images/loading.svg";
 import useCommonStore from "@/store/common";
 import { storeToRefs } from "pinia";
 import FriendList from "./components/FriendList.vue";
 import hamburgerIcon from "@/assets/images/hamburger.svg";
+import { useWebSocket } from "@/assets/tools";
+
+const { onConnectWebSocket, onSendMessage, linkStatusHandler } = useWebSocket(
+  "/chat",
+  onWSReceiveMessage,
+  () => {
+    disabledSend.value = false;
+  },
+  () => {
+    disabledSend.value = true;
+  }
+);
 
 const { isSP } = storeToRefs(useCommonStore());
-
-const wsStore = useWSStore();
 
 const friendList = ref<IFriendWithUnreadMsgCount[]>([]);
 async function listFriendWithUnreadMsgCount() {
@@ -119,28 +123,31 @@ function onChangeCurrentFriend(friend: IFriend) {
 // 初始化
 // 获取朋友列表和第一个朋友的消息列表
 function init() {
-  requestWrapper(async () => {
-    const res = await listFriendWithUnreadMsgCount();
-    friendList.value = res.data;
-    if (friendList.value.length > 0) {
-      currentFriend.value = friendList.value[0];
-      messageListLoading.value = true;
-      const res2 = await listMessageByFriendId(currentFriend.value.friendId);
-      hasPrev.value = res2.data.hasPrev;
-      currentFriendMessageList.value = res2.data.messageList;
-      onMessageBoxScrollToBottom();
+  requestWrapper(
+    async () => {
+      const res = await listFriendWithUnreadMsgCount();
+      friendList.value = res.data;
+      if (friendList.value.length > 0) {
+        currentFriend.value = friendList.value[0];
+        messageListLoading.value = true;
+        const res2 = await listMessageByFriendId(currentFriend.value.friendId);
+        hasPrev.value = res2.data.hasPrev;
+        currentFriendMessageList.value = res2.data.messageList;
+        onMessageBoxScrollToBottom();
+      }
+      onConnectWebSocket();
+    },
+    true,
+    true,
+    () => {
+      linkStatusHandler(LinkStatusEnum.failure);
+      return false;
     }
-    connectWebSocket();
-  }).finally(() => {
+  ).finally(() => {
     messageListLoading.value = false;
   });
 }
 
-const ws = ref<WebSocket>();
-// 发送超时timer
-const sendTimeoutTimer = ref<number>();
-// 心跳检查timer
-const heartbeatTimer = ref<number>();
 // 发送消息禁用状态
 const disabledSend = ref<boolean>(true);
 // 消息列表
@@ -195,23 +202,6 @@ function onMessageBoxScrollToBottom() {
   });
 }
 
-function handleSendTimeout() {
-  sendTimeoutTimer.value = setTimeout(() => {
-    handleLinkStatus(LinkStatusEnum.failure);
-  }, 5000);
-}
-
-// 心跳检查 30s一次
-function heartbeatCheck() {
-  heartbeatTimer.value = setInterval(() => {
-    try {
-      ws.value?.send(ChatOperationTypeEnum.heartbeat);
-      handleSendTimeout();
-    } catch (error) {
-      handleLinkStatus(LinkStatusEnum.failure);
-    }
-  }, 30000);
-}
 // 消息已读ws接收消息处理器
 function onMessageReadHandler(response: IWSResponse<IMessageReadData>) {
   const messageReadData = response.data;
@@ -249,95 +239,37 @@ function onSendMessageHandler(response: IWSResponse<ISendMessageData>) {
   onMessageBoxScrollToBottom();
 }
 // ws接收消息
-function onMessage(e: MessageEvent) {
-  clearTimeout(sendTimeoutTimer.value);
-  if (e.data) {
-    if (e.data === ChatOperationTypeEnum.heartbeat) {
-      return;
-    }
-    if (JSON.parse(e.data).status !== 200) {
-      return handleLinkStatus(
-        LinkStatusEnum.failure,
-        JSON.parse(e.data).status,
-        JSON.parse(e.data).message
-      );
-    }
-    // 消息已读处理
-    // 好友已读我发出的消息
-    // 我已读好友发送的消息
-    if (JSON.parse(e.data).operationType === ChatOperationTypeEnum.read) {
-      const response = JSON.parse(e.data) as IWSResponse<IMessageReadData>;
-      onMessageReadHandler(response);
-    }
-    // 发送消息
-    if (JSON.parse(e.data).operationType === ChatOperationTypeEnum.send) {
-      const response = JSON.parse(e.data) as IWSResponse<ISendMessageData>;
-      onSendMessageHandler(response);
-    }
+
+function onWSReceiveMessage(response: IWSResponse<IWSResponseData>) {
+  if (response.operationType === WSOperationTypeEnum.chat_read) {
+    onMessageReadHandler(response as IWSResponse<IMessageReadData>);
+  }
+  // 发送消息
+  if (response.operationType === WSOperationTypeEnum.chat_send) {
+    onSendMessageHandler(response as IWSResponse<ISendMessageData>);
   }
 }
-// WebSocket连接成功
-function onWSOpen() {
-  handleLinkStatus(LinkStatusEnum.success);
-  clearTimeout(sendTimeoutTimer.value);
-  if (ws.value) {
-    ws.value.onmessage = onMessage;
-    ws.value.onclose = () => handleLinkStatus(LinkStatusEnum.failure);
-  }
-}
-// 连接websocket
-function connectWebSocket() {
-  const token = getCookie("token");
-  ws.value = new WebSocket(env.WS_URL + "/chat", token);
-  handleSendTimeout();
-  ws.value.onopen = onWSOpen;
-  ws.value.onerror = () => handleLinkStatus(LinkStatusEnum.failure);
-}
-function handleLinkStatus(
-  status: LinkStatusEnum,
-  code?: number,
-  message?: string
-) {
-  switch (status) {
-    case LinkStatusEnum.success:
-      wsStore.onChangeLinkInfo(status, "已连接到服务器");
-      disabledSend.value = false;
-      heartbeatCheck();
-      break;
-    case LinkStatusEnum.failure:
-      wsStore.onChangeLinkInfo(status, "服务器连接断开，请刷新后重试");
-      disabledSend.value = true;
-      clearInterval(heartbeatTimer.value);
-      ws.value?.close();
-      ws.value = undefined;
-      break;
-    default:
-      break;
-  }
-  if (code === 401) {
-    toLoginPage(message);
-  }
-}
+
 // 已读所有接收到的消息
 function readAllMessage() {
   if (unreadMessageIds.value.length === 0) return;
   const request = {
-    operationType: ChatOperationTypeEnum.read,
+    operationType: WSOperationTypeEnum.chat_read,
     params: {
       friendId: currentFriend.value?.friendId,
       unreadMessageIds: unreadMessageIds.value,
     },
   };
-  ws.value?.send(JSON.stringify(request));
+  onSendMessage(JSON.stringify(request));
 }
 // 发送消息
 const messageBody = ref<string>();
 function sendMessage() {
   if (messageBody.value?.trim()) {
     const message = messageBody.value.trim();
-    ws.value?.send(
+    onSendMessage(
       JSON.stringify({
-        operationType: ChatOperationTypeEnum.send,
+        operationType: WSOperationTypeEnum.chat_send,
         params: {
           friendId: currentFriend.value?.friendId,
           message,
@@ -378,9 +310,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   messageListRef.value?.removeEventListener("scroll", onMessageListScroll);
-  ws.value && ws.value.close();
-  clearTimeout(sendTimeoutTimer.value);
-  clearInterval(heartbeatTimer.value);
 });
 </script>
 <template>
@@ -487,7 +416,11 @@ onBeforeUnmount(() => {
             '!px-3': isSP,
           }"
         >
-          <el-input type="textarea" v-model="messageBody"></el-input>
+          <el-input
+            type="textarea"
+            v-model="messageBody"
+            @keyup.ctrl.enter="sendMessage"
+          ></el-input>
           <el-button class="ml-3 h-full" @click="sendMessage">发送</el-button>
         </section>
       </article>

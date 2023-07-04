@@ -1,70 +1,35 @@
 <script lang="ts" setup>
 import { CopyDocument, Delete } from "@element-plus/icons-vue";
-import { nextTick, onMounted, onBeforeUnmount, ref } from "vue";
+import { nextTick, onMounted, ref } from "vue";
 import service, { IMemorandum } from "../../api/services";
-import { getCookie, scrollToBottom, toLoginPage } from "../../assets/tools";
+import { scrollToBottom } from "../../assets/tools";
 import { copyToClipboard } from "../../assets/tools/common";
-import env from "../../assets/env";
 import { ElMessage } from "element-plus";
 import { requestWrapper } from "@/api/request";
-import { LinkStatusEnum, MemorandumOperationTypeEnum } from "@/api/model";
-import useWSStore from "@/store/ws";
+import {
+  IResponseData,
+  IWSResponse,
+  LinkStatusEnum,
+  WSOperationTypeEnum,
+} from "@/api/model";
+import { useWebSocket } from "@/assets/tools";
 
-const wsStore = useWSStore();
-
-const ws = ref<WebSocket>();
-
+const { onConnectWebSocket, onSendMessage, linkStatusHandler } = useWebSocket(
+  "/memorandum",
+  onWSMessage,
+  () => {
+    disabledSend.value = false;
+  },
+  () => {
+    disabledSend.value = true;
+  }
+);
 // 是否禁止发送消息
 const disabledSend = ref(true);
-
-const heartbeatTimer = ref<number>();
-
-const sendTimeoutTimer = ref<number>();
-const handleSendTimeout = () => {
-  sendTimeoutTimer.value = setTimeout(() => {
-    handleLinkStatus(LinkStatusEnum.failure);
-  }, 5000);
-};
-// 心跳检查 30s一次
-const heartbeatCheck = () => {
-  heartbeatTimer.value = setInterval(() => {
-    try {
-      ws.value?.send(MemorandumOperationTypeEnum.heartbeat);
-      handleSendTimeout();
-    } catch (error) {
-      handleLinkStatus(LinkStatusEnum.failure);
-    }
-  }, 30000);
-};
-
-const handleLinkStatus = (
-  status: LinkStatusEnum,
-  code?: number,
-  message?: string
-) => {
-  switch (status) {
-    case LinkStatusEnum.success:
-      wsStore.onChangeLinkInfo(status, "已连接到服务器");
-      disabledSend.value = false;
-      heartbeatCheck();
-      break;
-    case LinkStatusEnum.failure:
-      wsStore.onChangeLinkInfo(status, "服务器连接断开，请刷新后重试");
-      disabledSend.value = true;
-      clearInterval(heartbeatTimer.value);
-      ws.value?.close();
-      ws.value = undefined;
-      break;
-    default:
-      break;
-  }
-  if (code === 401) {
-    toLoginPage(message);
-  }
-};
-
+const content = ref<string>("");
 const memorandumListRef = ref<HTMLDivElement>();
 const inputRef = ref<HTMLInputElement>();
+
 // 自动滚动到底部
 const memorandumContentScrollBottom = () => {
   nextTick(() => {
@@ -75,47 +40,17 @@ const memorandumContentScrollBottom = () => {
   });
 };
 // WebSocket接收消息
-const onMessage = (e: MessageEvent) => {
-  clearTimeout(sendTimeoutTimer.value);
-  if (e.data) {
-    if (e.data === MemorandumOperationTypeEnum.heartbeat) {
-      return;
-    }
-    const res = JSON.parse(e.data);
-    if (res.status === 200) {
-      const data = res.data;
-      // 消息列表
-      if (res.operationType === MemorandumOperationTypeEnum.replace) {
-        messageList.value = data;
-      } else if (res.operationType === MemorandumOperationTypeEnum.append) {
-        // 单条消息
-        messageList.value.push(data);
-      }
-      // 滚动到底部
-      memorandumContentScrollBottom();
-    } else {
-      handleLinkStatus(LinkStatusEnum.failure, res.status, res.message);
-    }
+function onWSMessage(response: IWSResponse<IResponseData>) {
+  if (response.operationType === WSOperationTypeEnum.memorandum_replace) {
+    messageList.value = response.data as IMemorandum[];
+  } else if (response.operationType === WSOperationTypeEnum.memorandum_append) {
+    messageList.value.push(response.data as IMemorandum);
   }
-};
-// WebSocket连接成功
-const onOpen = () => {
-  handleLinkStatus(LinkStatusEnum.success);
-  clearTimeout(sendTimeoutTimer.value);
-  if (ws.value) {
-    ws.value.onmessage = onMessage;
-    ws.value.onclose = () => handleLinkStatus(LinkStatusEnum.failure);
-  }
-};
-// WebSocket连接服务器
-const connectWebSocket = () => {
-  const token = getCookie("token");
-  ws.value = new WebSocket(env.WS_URL + "/memorandum", token);
-  handleSendTimeout();
-  ws.value.onopen = onOpen;
-  ws.value.onerror = () => handleLinkStatus(LinkStatusEnum.failure);
-};
-const getMessageBody = (value: string) => {
+  // 滚动到底部
+  memorandumContentScrollBottom();
+}
+
+const getMessageHTML = (value: string) => {
   const linkRule = /\[.+\]\(http(s)?:\/\/([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)*\)/g;
   const links = value.match(linkRule);
   if (links) {
@@ -135,13 +70,12 @@ const sendMessage = () => {
   const result = content.value.trim();
   if (result) {
     const data = {
-      operationType: MemorandumOperationTypeEnum.append,
+      operationType: WSOperationTypeEnum.memorandum_append,
       params: {
         content: result,
       },
     };
-    ws.value?.send(JSON.stringify(data));
-    handleSendTimeout();
+    onSendMessage(JSON.stringify(data));
     content.value = "";
     nextTick(() => {
       inputRef.value?.focus();
@@ -158,12 +92,12 @@ const getMessageList = () => {
         messageList.value = res.data;
       }
       memorandumContentScrollBottom();
-      connectWebSocket();
+      onConnectWebSocket();
     },
     true,
     true,
     () => {
-      handleLinkStatus(LinkStatusEnum.failure);
+      linkStatusHandler(LinkStatusEnum.failure);
     }
   );
 };
@@ -171,15 +105,7 @@ const getMessageList = () => {
 onMounted(() => {
   getMessageList();
 });
-
-onBeforeUnmount(() => {
-  ws.value && ws.value.close();
-  clearTimeout(sendTimeoutTimer.value);
-  clearInterval(heartbeatTimer.value);
-});
-
-const content = ref<string>("");
-
+// 删除消息
 const deleteMessage = (content: IMemorandum) => {
   const { id, userId } = content;
   if (id && userId) {
@@ -195,7 +121,7 @@ const deleteMessage = (content: IMemorandum) => {
     <div class="memorandum-box">
       <main ref="memorandumListRef" class="memorandum-main">
         <div class="content-box" v-for="item in messageList" :key="item.id">
-          <div v-html="getMessageBody(item.content)"></div>
+          <div v-html="getMessageHTML(item.content)"></div>
           <div class="memorandum-operation">
             <el-button
               class="copy-btn"
