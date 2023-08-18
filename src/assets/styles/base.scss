@@ -23,6 +23,7 @@ h3 {
   font-size: 24px;
   font-weight: bold;
 }
+
 h4 {
   font-size: 20px;
   font-weight: bold;
@@ -55,22 +56,4 @@ h5 {
   100% {
     background-color: rgba(0, 0, 0, 0.1);
   }
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-  background-color: transparent;
-}
-::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-::-webkit-scrollbar-thumb {
-  width: 8px;
-  border-radius: 8px;
-  background-color: transparent;
-}
-
-*:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
 }

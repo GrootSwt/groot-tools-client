@@ -29,7 +29,7 @@ import useCommonStore from "@/store/common";
 import { storeToRefs } from "pinia";
 import FriendList from "./components/FriendList.vue";
 import hamburgerIcon from "@/assets/images/hamburger.svg";
-import { useWebSocket } from "@/assets/tools";
+import { useWebSocket } from "@/assets/hooks";
 
 const { onConnectWebSocket, onSendMessage, linkStatusHandler } = useWebSocket(
   "/chat",

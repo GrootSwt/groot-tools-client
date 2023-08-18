@@ -12,7 +12,7 @@ import {
   LinkStatusEnum,
   WSOperationTypeEnum,
 } from "@/api/model";
-import { useWebSocket } from "@/assets/tools";
+import { useWebSocket } from "@/assets/hooks";
 
 const { onConnectWebSocket, onSendMessage, linkStatusHandler } = useWebSocket(
   "/memorandum",
@@ -118,108 +118,100 @@ const deleteMessage = (content: IMemorandum) => {
 </script>
 <template>
   <div class="memorandum-container">
-    <div class="memorandum-box">
-      <main ref="memorandumListRef" class="memorandum-main">
-        <div class="content-box" v-for="item in messageList" :key="item.id">
-          <div v-html="getMessageHTML(item.content)"></div>
-          <div class="memorandum-operation">
-            <el-button
-              class="copy-btn"
-              size="small"
-              :icon="CopyDocument"
-              circle
-              @click="copyToClipboard(item.content)"
-            />
-            <el-button
-              class="copy-btn"
-              size="small"
-              :icon="Delete"
-              circle
-              @click="deleteMessage(item)"
-            />
-          </div>
-        </div>
-      </main>
-      <footer class="memorandum-footer">
-        <el-input
-          ref="inputRef"
-          placeholder="链接格式：[文本](链接地址)&#13;&#10;CTRL+ENTER发送消息"
-          :disabled="disabledSend"
-          v-model="content"
-          :rows="3"
-          type="textarea"
-          maxlength="2000"
-          @keyup.ctrl.enter="sendMessage()"
-        />
-        <div class="operation">
+    <main ref="memorandumListRef" class="memorandum-main">
+      <div class="content-box" v-for="item in messageList" :key="item.id">
+        <div v-html="getMessageHTML(item.content)"></div>
+        <div class="memorandum-operation">
           <el-button
-            :disabled="disabledSend"
-            class="send-btn"
-            @click="sendMessage()"
-          >
-            发送
-          </el-button>
+            class="copy-btn"
+            size="small"
+            :icon="CopyDocument"
+            circle
+            @click="copyToClipboard(item.content)"
+          />
+          <el-button
+            class="copy-btn"
+            size="small"
+            :icon="Delete"
+            circle
+            @click="deleteMessage(item)"
+          />
         </div>
-      </footer>
-    </div>
+      </div>
+    </main>
+    <footer class="memorandum-footer">
+      <el-input
+        ref="inputRef"
+        placeholder="链接格式：[文本](链接地址)&#13;&#10;CTRL+ENTER发送消息"
+        :disabled="disabledSend"
+        v-model="content"
+        :rows="3"
+        type="textarea"
+        maxlength="2000"
+        @keyup.ctrl.enter="sendMessage()"
+      />
+      <div class="operation">
+        <el-button
+          :disabled="disabledSend"
+          class="send-btn"
+          @click="sendMessage()"
+        >
+          发送
+        </el-button>
+      </div>
+    </footer>
   </div>
 </template>
 <style lang="scss" scoped>
 .memorandum-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
   height: 100%;
-  .memorandum-box {
-    width: 100%;
-    height: 100%;
-    max-width: 500px;
-    display: flex;
-    flex-direction: column;
-    .memorandum-main {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0 12px;
-      .content-box {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        line-height: 1.5em;
-        padding: 1em 1.5em;
-        background-color: #f5f5f5;
-        border-radius: 1em;
-        white-space: pre-wrap;
-        word-break: break-all;
-        margin-top: 12px;
-        .memorandum-operation {
+  flex-direction: column;
+  .memorandum-main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1em;
+    .content-box {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      line-height: 1.5em;
+      padding: 1em 1.5em;
+      background-color: #f5f5f5;
+      border-radius: 1em;
+      white-space: pre-wrap;
+      margin-top: 12px;
+      &:first-child {
+        margin-top: 0;
+      }
+      .memorandum-operation {
+        flex: none;
+        .copy-btn {
           flex: none;
-          .copy-btn {
-            flex: none;
-            margin-left: 1em;
-          }
+          margin-left: 1em;
         }
       }
     }
-    .memorandum-footer {
-      flex: none;
+  }
+  .memorandum-footer {
+    flex: none;
+    display: flex;
+    :deep(.el-textarea__inner) {
+      resize: none;
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+    }
+    .operation {
+      position: relative;
       display: flex;
-      :deep(.el-textarea__inner) {
-        resize: none;
+      flex-direction: column;
+      margin-left: 4px;
+      .el-button {
         border: none;
-        box-shadow: none;
+        margin-left: 0;
         border-radius: 0;
-      }
-      .operation {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        margin-left: 4px;
-        .el-button {
-          border: none;
-          margin-left: 0;
-          border-radius: 0;
-          height: 100%;
-        }
+        height: 100%;
       }
     }
   }

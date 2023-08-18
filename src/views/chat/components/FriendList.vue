@@ -49,7 +49,7 @@ watch(
       <article
         class="text-center text-ellipsis overflow-hidden rounded-xl whitespace-nowrap cursor-pointer mx-6 px-3 py-1.5 mt-3 bg-green-800"
         :class="{
-          '!bg-green-600': currentFriend?.id === friend.id,
+          '!bg-green-600 cursor-not-allowed': currentFriend?.id === friend.id,
         }"
       >
         {{ friend.commentName || friend.displayName || friend.account }}

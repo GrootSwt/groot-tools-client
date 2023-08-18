@@ -46,11 +46,13 @@ function defaultErrorHandler(error: AxiosError) {
         break;
       case "ERR_NETWORK":
         abortController.abort();
+        // TODO error network handler
         ElMessage.error({
           message: "网络异常",
         });
         break;
       default:
+        // TODO unknown error handler
         router.push({
           path: "/error",
         });
@@ -141,7 +143,7 @@ export async function requestWrapper(
   } catch (error) {
     enableAbortRequestWhenError && abortController.abort();
     if (customErrorHandler && typeof customErrorHandler === "boolean") {
-      return error;
+      throw error;
     }
     errorHandler(error as AxiosError, customErrorHandler);
   } finally {
