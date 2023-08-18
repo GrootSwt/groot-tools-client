@@ -171,6 +171,9 @@ const deleteMessage = (content: IMemorandum) => {
     flex: 1;
     overflow-y: auto;
     padding: 1em;
+    width: 100%;
+    max-width: 640px;
+    margin: auto;
     .content-box {
       display: flex;
       align-items: flex-start;
@@ -195,6 +198,9 @@ const deleteMessage = (content: IMemorandum) => {
   }
   .memorandum-footer {
     flex: none;
+    width: 100%;
+    max-width: 640px;
+    margin: auto;
     display: flex;
     :deep(.el-textarea__inner) {
       resize: none;
