@@ -249,3 +249,15 @@ export function downloadFile(file: File) {
 export function validateNumeric(obj: any, prop: string) {
   obj[prop] = +(obj[prop] as string).replaceAll(/[^0-9]+/g, "");
 }
+
+/**
+ * 随机生成颜色
+ * @param a 透明度，默认值为1
+ * @returns rgba格式颜色
+ */
+export function randomColor(a = 1) {
+  const r = Math.floor(Math.random() * 256);
+  const g = Math.floor(Math.random() * 256);
+  const b = Math.floor(Math.random() * 256);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
