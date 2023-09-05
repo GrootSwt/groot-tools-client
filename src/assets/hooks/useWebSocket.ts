@@ -24,7 +24,7 @@ export function useWebSocket(
   function onConnectWebSocket() {
     const token = getCookie("token");
     ws.value = new WebSocket(env.WS_URL + url, token);
-    wsStore.onChangeLinkInfo(LinkStatusEnum.loading, "服务器连接中...");
+    wsStore.onChangeLinkInfo(LinkStatusEnum.loading, "连接中...");
     startLinkStatusCheck();
     ws.value.onopen = onOpenHandler;
     ws.value.onerror = onErrorHandler;
@@ -88,12 +88,12 @@ export function useWebSocket(
   ) {
     switch (status) {
       case LinkStatusEnum.success:
-        wsStore.onChangeLinkInfo(status, "已连接到服务器");
+        wsStore.onChangeLinkInfo(status, "已连接");
         startHeartbeatCheck();
         linkSuccess && linkSuccess();
         break;
       case LinkStatusEnum.failure:
-        wsStore.onChangeLinkInfo(status, "服务器连接断开，请刷新后重试");
+        wsStore.onChangeLinkInfo(status, "连接断开，请刷新");
         linkFailure && linkFailure();
         ws.value?.close();
         ws.value = undefined;
