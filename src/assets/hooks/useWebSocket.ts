@@ -127,11 +127,30 @@ export function useWebSocket(
     clearInterval(heartbeatCheckTimer.value);
   }
 
-  onBeforeUnmount(() => {
+  /**
+   * 关闭ws连接和停止连接状态检查和心跳检测
+   */
+  function closeAll() {
     ws.value?.close();
     ws.value = undefined;
     clearLinkStatusCheck();
     clearHeartbeatCheck();
+    wsStore.onChangeLinkInfo(LinkStatusEnum.failure, "连接断开，请刷新");
+  }
+
+  function onVisibilityChange() {
+    if (document.visibilityState === "visible") {
+      onConnectWebSocket();
+    } else {
+      closeAll();
+    }
+  }
+
+  document.addEventListener("visibilitychange", onVisibilityChange);
+
+  onBeforeUnmount(() => {
+    closeAll();
+    document.removeEventListener("visibilitychange", onVisibilityChange);
   });
 
   return {
