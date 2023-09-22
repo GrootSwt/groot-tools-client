@@ -4,7 +4,7 @@ import { nextTick, onMounted, ref } from "vue";
 import service, { IMemorandum } from "../../api/services";
 import { scrollToBottom } from "../../assets/tools";
 import { copyToClipboard } from "../../assets/tools/common";
-import { ElMessage } from "element-plus";
+import { ElMessage, InputInstance } from "element-plus";
 import { requestWrapper } from "@/api/request";
 import {
   IResponseData,
@@ -28,7 +28,9 @@ const { onConnectWebSocket, onSendMessage, linkStatusHandler } = useWebSocket(
 const disabledSend = ref(true);
 const content = ref<string>("");
 const memorandumListRef = ref<HTMLDivElement>();
-const inputRef = ref<HTMLInputElement>();
+const inputRef = ref<
+  InputInstance & { ref: HTMLInputElement | HTMLTextAreaElement | undefined }
+>();
 
 // 自动滚动到底部
 const memorandumContentScrollBottom = () => {
@@ -79,6 +81,19 @@ const sendMessage = () => {
     content.value = "";
     nextTick(() => {
       inputRef.value?.focus();
+    });
+  }
+};
+// 添加链接模版
+const addLinkTemplate = () => {
+  const template = "[]()";
+  if (content.value.length < 2000 - template.length) {
+    content.value += template;
+    nextTick(() => {
+      const selectionStart = content.value.length - (template.length - 1);
+      console.log(inputRef.value?.input);
+      inputRef.value?.ref?.focus();
+      inputRef.value?.ref?.setSelectionRange(selectionStart, selectionStart);
     });
   }
 };
@@ -153,6 +168,13 @@ const deleteMessage = (content: IMemorandum) => {
       <div class="operation">
         <el-button
           :disabled="disabledSend"
+          class="link-btn"
+          @click="addLinkTemplate()"
+        >
+          链接
+        </el-button>
+        <el-button
+          :disabled="disabledSend"
           class="send-btn"
           @click="sendMessage()"
         >
@@ -184,6 +206,10 @@ const deleteMessage = (content: IMemorandum) => {
       border-radius: 1em;
       white-space: pre-wrap;
       margin-top: 12px;
+      :deep(a) {
+        color: rgb(74 222 128);
+        text-decoration: underline;
+      }
       &:first-child {
         margin-top: 0;
       }
@@ -211,6 +237,7 @@ const deleteMessage = (content: IMemorandum) => {
     .operation {
       position: relative;
       display: flex;
+      gap: 0.25em;
       flex-direction: column;
       margin-left: 4px;
       .el-button {
