@@ -26,7 +26,10 @@ function onLogout() {
 </script>
 <template>
   <section class="h-full bg-slate-50">
-    <header class="flex items-center justify-between bg-slate-200 h-12 px-3">
+    <header
+      id="header"
+      class="flex items-center justify-between bg-slate-200 h-12 px-3"
+    >
       <!-- 回到首页 -->
       <article>
         <RouterLink to="/" v-if="$route.path !== '/'">
@@ -53,7 +56,7 @@ function onLogout() {
         <el-button v-else @click="onLogout">注销</el-button>
       </article>
     </header>
-    <main class="main">
+    <main id="main" class="main">
       <RouterView />
     </main>
   </section>

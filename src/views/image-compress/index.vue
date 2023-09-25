@@ -193,11 +193,7 @@ const downloadCompressedFile = () => {
           :preview-src-list="[compressedFileUrl]"
         ></el-image>
       </article>
-      <el-button
-        type="primary"
-        class="mt-6"
-        @click="downloadCompressedFile"
-      >
+      <el-button type="primary" class="mt-6" @click="downloadCompressedFile">
         下载
       </el-button>
     </section>

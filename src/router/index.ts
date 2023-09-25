@@ -50,6 +50,14 @@ const router = createRouter({
             title: "图片压缩",
           },
         },
+        {
+          path: "/electronic-signature",
+          name: "electronicSignature",
+          component: () => import("../views/electronic-signature/index.vue"),
+          meta: {
+            title: "电子签名",
+          },
+        },
       ],
     },
 

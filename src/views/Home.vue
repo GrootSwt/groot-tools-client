@@ -17,6 +17,12 @@ import RouterLinkView from "@/components/RouterLinkView.vue";
         >
           图片压缩
         </RouterLinkView>
+        <RouterLinkView
+          to="/electronic-signature"
+          :style="{ backgroundColor: randomColor() }"
+        >
+          电子签名
+        </RouterLinkView>
       </section>
     </article>
     <article class="border border-red-400 rounded p-3 relative">

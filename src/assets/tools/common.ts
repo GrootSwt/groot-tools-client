@@ -1,3 +1,13 @@
+export function debounce(fn: (...args: any[]) => any, delay = 200) {
+  let timer = 0;
+  return (...innerArgs: any[]) => {
+    timer && clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn(innerArgs);
+    }, delay);
+  };
+}
+
 /**
  * 复制
  * @param text 复制文本
@@ -133,20 +143,78 @@ function getCompressImage(
   const ctx = canvas.getContext("2d");
   if (ctx) {
     ctx.drawImage(image, 0, 0, width, height);
-    const base64 = canvas.toDataURL("image/jpeg", quality);
+    const base64 = canvas.toDataURL("image/png", quality);
     const bytes = window.atob(base64.split(",")[1]);
     const buffer = new ArrayBuffer(bytes.length);
     const array = new Uint8Array(buffer);
     for (let i = 0; i < bytes.length; i++) {
       array[i] = bytes.charCodeAt(i);
     }
-    const blob = new Blob([buffer], { type: "image/jpeg" });
-    const newFile = new File([blob], `${name}_thumbnail.jpg`, {
+    const blob = new Blob([buffer], { type: "image/png" });
+    const newFile = new File([blob], `${name}_thumbnail.png`, {
       type: blob.type,
     });
     return newFile;
   } else {
     return null;
+  }
+}
+
+export function setCanvasContextTransparentBackground(
+  canvas: HTMLCanvasElement
+) {
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const { width, height } = canvas;
+    ctx.clearRect(0, 0, width, height);
+    ctx.globalCompositeOperation = "destination-over";
+    ctx.fillStyle = "rgba(0, 0, 0, 0)";
+    ctx.fillRect(0, 0, width, height);
+  } else {
+    throw new Error("该浏览器不支持canvas context");
+  }
+}
+
+export function canvasToImageFile(
+  canvas: HTMLCanvasElement,
+  imageWidth = 200,
+  filename: string
+) {
+  const { width, height } = canvas;
+  const offScreenCanvas = document.createElement("canvas");
+  offScreenCanvas.width = imageWidth;
+  offScreenCanvas.height = (imageWidth / width) * height;
+  const { width: offscreen_width, height: offscreen_height } = offScreenCanvas;
+  setCanvasContextTransparentBackground(offScreenCanvas);
+  const offScreenCtx = offScreenCanvas.getContext("2d");
+  if (offScreenCtx) {
+    offScreenCtx.drawImage(
+      canvas,
+      0,
+      0,
+      width,
+      height,
+      0,
+      0,
+      offscreen_width,
+      offscreen_height
+    );
+    const base64 = offScreenCanvas.toDataURL("image/png");
+    const bytes = window.atob(base64.split(",")[1]);
+    const buffer = new ArrayBuffer(bytes.length);
+    const array = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.length; i++) {
+      array[i] = bytes.charCodeAt(i);
+    }
+    const blob = new Blob([buffer], {
+      type: "image/png",
+    });
+    const file = new File([blob], `${filename}.png`, {
+      type: blob.type,
+    });
+    return file;
+  } else {
+    throw new Error("该浏览器不支持canvas context");
   }
 }
 
@@ -260,4 +328,18 @@ export function randomColor(a = 1) {
   const g = Math.floor(Math.random() * 256);
   const b = Math.floor(Math.random() * 256);
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+export enum DeviceTypeEnum {
+  PC,
+  SP,
+}
+
+/**
+ * 获取用户代理类型
+ * @returns 设备类型 PC ｜ SP
+ */
+export function getDeviceType(): DeviceTypeEnum {
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return userAgent.includes("mobile") ? DeviceTypeEnum.SP : DeviceTypeEnum.PC;
 }
