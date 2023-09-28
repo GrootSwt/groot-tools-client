@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { FormInstance, FormRules } from "element-plus";
-import { reactive, ref } from "vue";
 import service, { ILoginForm } from "@/api/services";
 import router from "../router";
 import { useRoute } from "vue-router";

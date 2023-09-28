@@ -1,13 +1,21 @@
 import { BaseService, IResponse, IResponseData } from "../model";
-import { deleteRequest, getRequest } from "../request";
+import { deleteRequest, getRequest, postRequest } from "../request";
+import { FileResponse } from "./file";
 
-export interface IMemorandum {
+export enum MemorandumType {
+  TEXT = "text",
+  FILE = "file",
+}
+
+export type IMemorandum = {
   id?: string;
   userId?: string;
   content: string;
+  contentType: MemorandumType;
   createTime?: Date;
   updateTime?: Date;
-}
+  file?: FileResponse;
+};
 
 export interface IListMemorandumResponseData extends IResponseData {
   data: Array<IMemorandum>;
@@ -23,6 +31,9 @@ class Memorandum extends BaseService {
     return deleteRequest(
       this.baseUrl + `/memorandum/${id}/deleteMemorandumById`
     ) as Promise<IResponse>;
+  }
+  uploadFile(data: FormData) {
+    return postRequest(this.baseUrl + `/memorandum/uploadFile`, data);
   }
 }
 

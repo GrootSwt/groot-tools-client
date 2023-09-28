@@ -1,5 +1,4 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
 
 const useCommonStore = defineStore("common", () => {
   // abort request

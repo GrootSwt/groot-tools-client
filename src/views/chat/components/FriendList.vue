@@ -2,7 +2,6 @@
 import { IFriendWithUnreadMsgCount } from "@/api/services";
 import useCommonStore from "@/store/common";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;

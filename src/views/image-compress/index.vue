@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { UploadFilled } from "@element-plus/icons-vue";
 import {
   compressImage,
   ImageFileInfo,
@@ -14,7 +13,6 @@ import {
   UploadProps,
   UploadRawFile,
 } from "element-plus";
-import { computed, ref, watch } from "vue";
 
 const uploadRef = ref<UploadInstance>();
 const originFile = ref<UploadFile>();
@@ -110,7 +108,7 @@ const downloadCompressedFile = () => {
       :on-change="handleChange"
       :on-remove="handleRemove"
     >
-      <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+      <el-icon class="el-icon--upload"><i-ep-upload-filled /></el-icon>
       <div class="el-upload__text">拖拽或者<em>点击上传</em></div>
       <template #tip>
         <div class="el-upload__tip font-bold">

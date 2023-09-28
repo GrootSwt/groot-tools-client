@@ -1,12 +1,4 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
 import service, {
   ReadStatusEnum,
   IFriend,
@@ -24,11 +16,9 @@ import {
   LinkStatusEnum,
 } from "@/api/model";
 import { dayjs } from "element-plus";
-import loadingIcon from "@/assets/images/loading.svg";
 import useCommonStore from "@/store/common";
 import { storeToRefs } from "pinia";
 import FriendList from "./components/FriendList.vue";
-import hamburgerIcon from "@/assets/images/hamburger.svg";
 import { useWebSocket } from "@/assets/hooks";
 
 const { onConnectWebSocket, onSendMessage, linkStatusHandler } = useWebSocket(
@@ -319,15 +309,16 @@ onBeforeUnmount(() => {
     <!-- 响应式为sp的时候显示查看朋友列表按钮 -->
     <el-button
       circle
+      plain
       class="fixed z-10 left-4 top-16"
       :class="{
         '!hidden': !isSP,
       }"
       @click="onShowFriendList"
     >
-      <template #icon>
-        <img :src="hamburgerIcon" alt="" />
-      </template>
+      <el-icon :size="16">
+        <i-ep-operation />
+      </el-icon>
     </el-button>
     <section
       class="mt-3 flex justify-center gap-6 items-center h-4/5 w-4/5 max-w-5xl p-6 rounded-3xl bg-slate-300 shadow-xl shadow-slate-400/50"
@@ -357,7 +348,7 @@ onBeforeUnmount(() => {
             '!flex !h-6': fetchPrevMessageLoading,
           }"
         >
-          <img :src="loadingIcon" alt="" class="h-full animate-spin" />
+          <el-icon class="h-full animate-spin"><i-ep-loading /></el-icon>
         </section>
         <!-- message list -->
         <section

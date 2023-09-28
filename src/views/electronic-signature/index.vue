@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { onBeforeUnmount, onMounted, shallowRef, ref } from "vue";
 import {
   getDeviceType,
   DeviceTypeEnum,

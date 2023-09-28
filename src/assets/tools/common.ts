@@ -1,6 +1,6 @@
-export function debounce(fn: (...args: any[]) => any, delay = 200) {
+export function debounce(fn: (...args: unknown[]) => unknown, delay = 200) {
   let timer = 0;
-  return (...innerArgs: any[]) => {
+  return (...innerArgs: unknown[]) => {
     timer && clearTimeout(timer);
     timer = setTimeout(() => {
       fn(innerArgs);
@@ -311,6 +311,18 @@ export function downloadFile(file: File) {
     };
     fileReader.readAsDataURL(file);
   });
+}
+
+export function fetchDownload(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.download = filename;
+  a.href = url;
+  document.body.appendChild(a);
+  a.style.display = "none";
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

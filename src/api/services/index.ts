@@ -9,6 +9,7 @@ import Memorandum from "./memorandum";
 import Friend from "./friend";
 import Message from "./message";
 import User from "./user";
+import File from "./file";
 
 const baseUrl = env.BASE_URL;
 
@@ -18,6 +19,7 @@ const service = {
   friend: new Friend(baseUrl + "/friend"),
   message: new Message(baseUrl + "/message"),
   user: new User(baseUrl + "/user"),
+  file: new File(baseUrl + "/file"),
 };
 
 export default service;

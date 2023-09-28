@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import goHomeIcon from "@/assets/images/go-home.svg";
 import { RouterView } from "vue-router";
 import useWSStore from "@/store/ws";
 import { storeToRefs } from "pinia";
@@ -33,7 +32,7 @@ function onLogout() {
       <!-- 回到首页 -->
       <article>
         <RouterLink to="/" v-if="$route.path !== '/'">
-          <img :src="goHomeIcon" alt="" class="w-10 h-10" />
+          <el-icon size="28"><i-ep-home-filled /></el-icon>
         </RouterLink>
       </article>
       <!-- websocket连接状态展示 -->
@@ -50,7 +49,6 @@ function onLogout() {
           {{ linkInfo.message }}
         </h4>
       </article>
-      <!-- TODO 登录 -->
       <article>
         <el-button v-if="!isLogin" @click="onLogin">登录</el-button>
         <el-button v-else @click="onLogout">注销</el-button>

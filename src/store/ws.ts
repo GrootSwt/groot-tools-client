@@ -1,6 +1,5 @@
 import { LinkStatusEnum } from "@/api/model";
 import { defineStore } from "pinia";
-import { ref } from "vue";
 
 const useWSStore = defineStore("ws", () => {
   const isShowLinkInfo = ref(false);

@@ -1,10 +1,8 @@
 <script lang="ts" setup>
-import { CopyDocument, Delete } from "@element-plus/icons-vue";
-import { nextTick, onMounted, ref } from "vue";
-import service, { IMemorandum } from "../../api/services";
+import service, { IMemorandum, MemorandumType } from "../../api/services";
 import { scrollToBottom } from "../../assets/tools";
 import { copyToClipboard } from "../../assets/tools/common";
-import { ElMessage, InputInstance } from "element-plus";
+import { ElMessage, ElMessageBox, InputInstance } from "element-plus";
 import { requestWrapper } from "@/api/request";
 import {
   IResponseData,
@@ -61,7 +59,7 @@ const getMessageHTML = (value: string) => {
       const splitIndex = link.indexOf("](");
       const title = link.substring(1, splitIndex);
       const href = link.substring(splitIndex + 2, link.length - 1);
-      const replaceLink = `<a href="${href}" target="blank">${title}</a>`;
+      const replaceLink = `<a href="${href}" class="text-blue-400 underline" target="blank">${title}</a>`;
       value = value.replace(link, replaceLink);
     }
   }
@@ -130,57 +128,153 @@ const deleteMessage = (content: IMemorandum) => {
     });
   }
 };
+const fileUploaderRef = shallowRef<HTMLInputElement | null>(null);
+let chooseFile: File | null = null;
+
+function openFileUploader() {
+  const fileUploader = fileUploaderRef.value;
+  if (fileUploader) {
+    fileUploader.value = "";
+    fileUploader.click();
+  }
+}
+const fileAccept = ref(".pdf,.doc,.docx,.xls,.jpg,.jpeg,.png");
+
+const MAX_SIZE = 100 * 1024;
+
+function onFileUploaderChange() {
+  const fileUploader = fileUploaderRef.value;
+  if (fileUploader && fileUploader.files) {
+    const file = fileUploader.files[0];
+    const { size, name } = file;
+    if (size > MAX_SIZE) {
+      ElMessage.warning("上传文件大于100KB");
+      return;
+    }
+    const fileAcceptList = fileAccept.value.split(",");
+    if (fileAcceptList.indexOf(name.substring(name.lastIndexOf("."))) === -1) {
+      ElMessage.warning("仅支持以下文件类型：" + fileAccept.value);
+    }
+    chooseFile = file;
+    popupMessageBox();
+  }
+}
+function popupMessageBox() {
+  ElMessageBox.confirm("是否上传文件?", "", {
+    confirmButtonText: "上传",
+    cancelButtonText: "取消",
+  }).then(() => {
+    uploadFile();
+  });
+}
+
+function uploadFile() {
+  if (chooseFile) {
+    const formData = new FormData();
+    formData.append("file", chooseFile);
+    requestWrapper(async () => {
+      await service.memorandum.uploadFile(formData);
+    });
+  }
+}
+
+function downloadFile(content: IMemorandum) {
+  const { file } = content;
+  if (file?.id && file.originalName) {
+    requestWrapper(async () => {
+      await service.file.download(file.id, file.originalName);
+    });
+  }
+}
 </script>
 <template>
   <div class="memorandum-container">
     <main ref="memorandumListRef" class="memorandum-main">
       <div class="content-box" v-for="item in messageList" :key="item.id">
-        <div v-html="getMessageHTML(item.content)"></div>
+        <div
+          v-if="item.contentType === MemorandumType.TEXT"
+          v-html="getMessageHTML(item.content)"
+        ></div>
+        <div v-else-if="item.contentType === MemorandumType.FILE">
+          <span class="cursor-pointer text-green-400">
+            {{ item.file?.originalName }}
+          </span>
+        </div>
         <div class="memorandum-operation">
           <el-button
+            v-if="item.contentType === MemorandumType.TEXT"
             class="copy-btn"
             size="small"
-            :icon="CopyDocument"
             circle
             @click="copyToClipboard(item.content)"
-          />
+          >
+            <el-icon>
+              <i-ep-copy-document />
+            </el-icon>
+          </el-button>
+          <el-button
+            v-else-if="item.contentType === MemorandumType.FILE"
+            class="copy-btn"
+            size="small"
+            circle
+            @click="downloadFile(item)"
+          >
+            <el-icon>
+              <i-ep-download />
+            </el-icon>
+          </el-button>
           <el-button
             class="copy-btn"
             size="small"
-            :icon="Delete"
             circle
             @click="deleteMessage(item)"
-          />
+          >
+            <el-icon>
+              <i-ep-delete />
+            </el-icon>
+          </el-button>
         </div>
       </div>
     </main>
-    <footer class="memorandum-footer">
-      <el-input
-        ref="inputRef"
-        placeholder="链接格式：[文本](链接地址)&#13;&#10;CTRL+ENTER发送消息"
-        :disabled="disabledSend"
-        v-model="content"
-        :rows="3"
-        type="textarea"
-        maxlength="2000"
-        @keyup.ctrl.enter="sendMessage()"
-      />
-      <div class="operation">
-        <el-button
+    <footer
+      class="memorandum-footer flex flex-col gap-1 bg-slate-200 rounded-md p-1"
+    >
+      <section class="flex items-center gap-1 px-2">
+        <el-icon @click="addLinkTemplate" class="cursor-pointer">
+          <i-ep-link />
+        </el-icon>
+        <el-icon class="cursor-pointer" @click="openFileUploader">
+          <i-ep-upload />
+          <input
+            ref="fileUploaderRef"
+            type="file"
+            class="hidden"
+            :accept="fileAccept"
+            @change="onFileUploaderChange"
+          />
+        </el-icon>
+      </section>
+      <section class="flex">
+        <el-input
+          ref="inputRef"
+          placeholder="链接格式：[文本](链接地址)&#13;&#10;CTRL+ENTER发送消息"
           :disabled="disabledSend"
-          class="link-btn"
-          @click="addLinkTemplate()"
-        >
-          链接
-        </el-button>
-        <el-button
-          :disabled="disabledSend"
-          class="send-btn"
-          @click="sendMessage()"
-        >
-          发送
-        </el-button>
-      </div>
+          v-model="content"
+          :rows="3"
+          type="textarea"
+          maxlength="2000"
+          @keyup.ctrl.enter="sendMessage()"
+        />
+        <div class="operation">
+          <el-button
+            :disabled="disabledSend"
+            class="send-btn"
+            @click="sendMessage()"
+          >
+            发送
+          </el-button>
+        </div>
+      </section>
     </footer>
   </div>
 </template>
@@ -206,10 +300,6 @@ const deleteMessage = (content: IMemorandum) => {
       border-radius: 1em;
       white-space: pre-wrap;
       margin-top: 12px;
-      :deep(a) {
-        color: rgb(74 222 128);
-        text-decoration: underline;
-      }
       &:first-child {
         margin-top: 0;
       }
@@ -227,7 +317,6 @@ const deleteMessage = (content: IMemorandum) => {
     width: 100%;
     max-width: 640px;
     margin: auto;
-    display: flex;
     :deep(.el-textarea__inner) {
       resize: none;
       border: none;

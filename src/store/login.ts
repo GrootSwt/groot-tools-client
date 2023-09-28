@@ -1,5 +1,4 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
 
 const useLoginStore = defineStore("login", () => {
   // 是否登录

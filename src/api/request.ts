@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import router from "@/router";
 import { ElMessage } from "element-plus";
@@ -127,7 +126,7 @@ export function errorHandler(
  * 入参为函数时：首先使用自定义错误处理器处理，若自定义异常处理器返回false，交由默认错误处理器处理；
  */
 export async function requestWrapper(
-  businessRequest: () => Promise<any>,
+  businessRequest: () => Promise<unknown>,
   enableGlobalLoading = true,
   enableAbortRequestWhenError = true,
   customErrorHandler: ((error: AxiosError) => boolean | void) | boolean = false
