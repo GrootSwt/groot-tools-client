@@ -21,20 +21,29 @@ import { storeToRefs } from "pinia";
 import FriendList from "./components/FriendList.vue";
 import { useWebSocket } from "@/assets/hooks";
 
+const needReConnect = ref(false);
+
 const { onConnectWebSocket, onSendMessage, linkStatusHandler } = useWebSocket(
   "/chat",
   onWSReceiveMessage,
+  needReConnect,
   () => {
     disabledSend.value = false;
   },
   () => {
     disabledSend.value = true;
-  }
+  },
+  fetchMessageList
 );
 
 const { isSP } = storeToRefs(useCommonStore());
 
 const friendList = ref<IFriendWithUnreadMsgCount[]>([]);
+
+const friendListLength = computed(() => {
+  return friendList.value.length;
+});
+
 async function listFriendWithUnreadMsgCount() {
   return await service.friend.listFriendWithUnreadMsgCount();
 }
@@ -110,6 +119,15 @@ function onChangeCurrentFriend(friend: IFriend) {
   });
 }
 
+async function fetchMessageList() {
+  if (currentFriend.value?.friendId) {
+    const res = await listMessageByFriendId(currentFriend.value.friendId);
+    hasPrev.value = res.data.hasPrev;
+    currentFriendMessageList.value = res.data.messageList;
+    onMessageBoxScrollToBottom();
+  }
+}
+
 // 初始化
 // 获取朋友列表和第一个朋友的消息列表
 function init() {
@@ -118,14 +136,15 @@ function init() {
       const res = await listFriendWithUnreadMsgCount();
       friendList.value = res.data;
       if (friendList.value.length > 0) {
+        needReConnect.value = true;
         currentFriend.value = friendList.value[0];
         messageListLoading.value = true;
         const res2 = await listMessageByFriendId(currentFriend.value.friendId);
         hasPrev.value = res2.data.hasPrev;
         currentFriendMessageList.value = res2.data.messageList;
         onMessageBoxScrollToBottom();
+        onConnectWebSocket();
       }
-      onConnectWebSocket();
     },
     true,
     true,
@@ -304,6 +323,13 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <main
+    v-if="friendListLength === 0"
+    class="flex justify-center mt-2 text-lg font-bold"
+  >
+    没有好友
+  </main>
+  <main
+    v-else
     class="flex flex-col justify-center items-center h-full text-slate-100 text-base"
   >
     <!-- 响应式为sp的时候显示查看朋友列表按钮 -->
@@ -410,6 +436,7 @@ onBeforeUnmount(() => {
           <el-input
             type="textarea"
             v-model="messageBody"
+            :disabled="disabledSend"
             @keyup.ctrl.enter="sendMessage"
           ></el-input>
           <el-button class="ml-3 h-full" @click="sendMessage">发送</el-button>

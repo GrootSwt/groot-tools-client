@@ -11,6 +11,7 @@ import useWSStore from "@/store/ws";
 export function useWebSocket(
   url: string,
   receiveMessage: (response: IWSResponse<IWSResponseData>) => void,
+  needReConnect: Ref<boolean>,
   linkSuccess?: () => void,
   linkFailure?: () => void,
   reConnectWebSocketCallback?: () => void
@@ -148,7 +149,7 @@ export function useWebSocket(
 
   function onVisibilityChange() {
     if (document.visibilityState === "visible") {
-      reConnectWebSocket();
+      needReConnect.value && reConnectWebSocket();
     } else {
       closeAll();
     }

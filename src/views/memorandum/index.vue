@@ -12,9 +12,12 @@ import {
 } from "@/api/model";
 import { useWebSocket } from "@/assets/hooks";
 
+const needReConnect = ref(true);
+
 const { onConnectWebSocket, onSendMessage, linkStatusHandler } = useWebSocket(
   "/memorandum",
   onWSMessage,
+  needReConnect,
   () => {
     disabledSend.value = false;
   },

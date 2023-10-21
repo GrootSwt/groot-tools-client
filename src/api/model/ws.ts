@@ -1,6 +1,7 @@
 import { IMemorandum, IMessage } from "../services";
 
 export enum LinkStatusEnum {
+  unConnect = "unConnect",
   loading = "loading",
   failure = "failure",
   success = "success",

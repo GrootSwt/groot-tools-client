@@ -5,8 +5,8 @@ const useWSStore = defineStore("ws", () => {
   const isShowLinkInfo = ref(false);
   // websocket连接信息
   const initLinkInfo = {
-    status: LinkStatusEnum.loading,
-    message: "服务器连接中...",
+    status: LinkStatusEnum.unConnect,
+    message: "",
   };
   const linkInfo = ref<{
     // 是否展示
