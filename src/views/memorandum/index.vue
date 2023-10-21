@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import service, { IMemorandum, MemorandumType } from "../../api/services";
 import { scrollToBottom } from "../../assets/tools";
-import { copyToClipboard } from "../../assets/tools/common";
+import { compressImage, copyToClipboard } from "../../assets/tools/common";
 import { ElMessage, ElMessageBox, InputInstance } from "element-plus";
 import { requestWrapper } from "@/api/request";
 import {
@@ -20,7 +20,8 @@ const { onConnectWebSocket, onSendMessage, linkStatusHandler } = useWebSocket(
   },
   () => {
     disabledSend.value = true;
-  }
+  },
+  fetchMemorandumList
 );
 // 是否禁止发送消息
 const disabledSend = ref(true);
@@ -97,13 +98,17 @@ const addLinkTemplate = () => {
 };
 // 初始加载获取消息列表
 const messageList = ref<Array<IMemorandum>>([]);
-const getMessageList = () => {
+// 获取消息列表
+async function fetchMemorandumList() {
+  const res = await service.memorandum.listMemorandum();
+  if (res.data) {
+    messageList.value = res.data;
+  }
+}
+function getMessageList() {
   requestWrapper(
     async () => {
-      const res = await service.memorandum.listMemorandum();
-      if (res.data) {
-        messageList.value = res.data;
-      }
+      await fetchMemorandumList();
       memorandumContentScrollBottom();
       onConnectWebSocket();
     },
@@ -113,7 +118,7 @@ const getMessageList = () => {
       linkStatusHandler(LinkStatusEnum.failure);
     }
   );
-};
+}
 
 onMounted(() => {
   getMessageList();
@@ -142,21 +147,34 @@ const fileAccept = ref(".pdf,.doc,.docx,.xls,.jpg,.jpeg,.png");
 
 const MAX_SIZE = 100 * 1024;
 
-function onFileUploaderChange() {
+async function onFileUploaderChange() {
   const fileUploader = fileUploaderRef.value;
   if (fileUploader && fileUploader.files) {
-    const file = fileUploader.files[0];
-    const { size, name } = file;
-    if (size > MAX_SIZE) {
-      ElMessage.warning("上传文件大于100KB");
-      return;
-    }
+    let file = fileUploader.files[0];
+    const { size, name, type } = file;
     const fileAcceptList = fileAccept.value.split(",");
     if (fileAcceptList.indexOf(name.substring(name.lastIndexOf("."))) === -1) {
       ElMessage.warning("仅支持以下文件类型：" + fileAccept.value);
     }
+    if (size > MAX_SIZE) {
+      if (type.startsWith("image")) {
+        const messageHandler = ElMessage.info("尝试压缩图片");
+        try {
+          file = await compressImage(file, MAX_SIZE / 1024);
+          ElMessage.success("图片压缩成功");
+        } catch (error) {
+          messageHandler.close();
+          ElMessage.error("图片压缩失败，请选择小于100KB的文件");
+          return;
+        }
+      } else {
+        ElMessage.warning("上传文件大于100KB");
+        return;
+      }
+    }
     chooseFile = file;
     popupMessageBox();
+    return;
   }
 }
 function popupMessageBox() {

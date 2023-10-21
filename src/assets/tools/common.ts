@@ -98,6 +98,7 @@ export function compressImage(
             targetHeight === originHeight
           ) {
             resolve(originImageFile);
+            return;
           } else {
             let newFile: File | null = null;
             let quality = 0.9;
@@ -112,18 +113,22 @@ export function compressImage(
               quality = quality - 0.1;
               if (quality <= 0) {
                 reject("file is too large");
+                return;
               }
             } while (newFile && newFile.size / 1024 > maxSize);
             if (newFile) {
               resolve(newFile);
+              return;
             } else {
               reject("file compress error");
+              return;
             }
           }
         };
         image.src = result as string;
       } else {
         reject(new Error("file load error"));
+        return;
       }
     };
     fileReader.readAsDataURL(originImageFile);

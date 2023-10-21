@@ -12,7 +12,8 @@ export function useWebSocket(
   url: string,
   receiveMessage: (response: IWSResponse<IWSResponseData>) => void,
   linkSuccess?: () => void,
-  linkFailure?: () => void
+  linkFailure?: () => void,
+  reConnectWebSocketCallback?: () => void
 ) {
   const wsStore = useWSStore();
   /**
@@ -137,9 +138,17 @@ export function useWebSocket(
     wsStore.onChangeLinkInfo(LinkStatusEnum.failure, "连接断开，请刷新");
   }
 
+  /**
+   * 重连websocket
+   */
+  function reConnectWebSocket() {
+    onConnectWebSocket();
+    reConnectWebSocketCallback && reConnectWebSocketCallback();
+  }
+
   function onVisibilityChange() {
     if (document.visibilityState === "visible") {
-      onConnectWebSocket();
+      reConnectWebSocket();
     } else {
       closeAll();
     }
