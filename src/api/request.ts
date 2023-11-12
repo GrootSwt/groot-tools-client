@@ -30,7 +30,7 @@ defaultInstance.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    return Promise.reject(error);
+    throw error;
   }
 );
 
