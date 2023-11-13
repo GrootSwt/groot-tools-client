@@ -148,6 +148,7 @@ function openFileUploader() {
 }
 const fileAccept = ref(".pdf,.doc,.docx,.xls,.jpg,.jpeg,.png");
 
+// 单位B
 const MAX_SIZE = 100 * 1024;
 
 async function onFileUploaderChange() {
@@ -181,7 +182,7 @@ async function onFileUploaderChange() {
   }
 }
 function popupMessageBox() {
-  ElMessageBox.confirm("是否上传文件?", "", {
+  ElMessageBox.confirm("是否上传文件?(上传的文件2～4天后自动删除)", "", {
     confirmButtonText: "上传",
     cancelButtonText: "取消",
   }).then(() => {
