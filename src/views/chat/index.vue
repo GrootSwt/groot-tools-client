@@ -5,7 +5,7 @@ import service, {
   IFriendWithUnreadMsgCount,
   IMessage,
 } from "@/api/services";
-import { requestWrapper } from "@/api/request";
+import { requestWrapper } from "@/api/request/index";
 import { scrollToBottom, formatDateTime } from "@/assets/tools";
 import {
   WSOperationTypeEnum,
@@ -135,29 +135,31 @@ async function fetchMessageList() {
 // 初始化
 // 获取朋友列表和第一个朋友的消息列表
 function init() {
-  requestWrapper(async () => {
-    const { data } = await listFriendWithUnreadMsgCount();
-    friendList.value = data.data;
-    if (friendList.value.length > 0) {
-      needReConnect.value = true;
-      currentFriend.value = friendList.value[0];
-      messageListLoading.value = true;
-      const { data: data2 } = await listMessageByFriendId(
-        currentFriend.value.friendId
-      );
-      hasPrev.value = data2.data.hasPrev;
-      currentFriendMessageList.value = data2.data.messageList;
-      onMessageBoxScrollToBottom();
-      onConnectWebSocket();
-    }
-  }, [
-    true,
-    undefined,
-    () => {
-      linkStatusHandler(LinkStatusEnum.failure);
-      return false;
+  requestWrapper(
+    async () => {
+      const { data } = await listFriendWithUnreadMsgCount();
+      friendList.value = data.data;
+      if (friendList.value.length > 0) {
+        needReConnect.value = true;
+        currentFriend.value = friendList.value[0];
+        messageListLoading.value = true;
+        const { data: data2 } = await listMessageByFriendId(
+          currentFriend.value.friendId
+        );
+        hasPrev.value = data2.data.hasPrev;
+        currentFriendMessageList.value = data2.data.messageList;
+        onMessageBoxScrollToBottom();
+        onConnectWebSocket();
+      }
     },
-  ]).finally(() => {
+    {
+      isLoading: true,
+      errorHandler: () => {
+        linkStatusHandler(LinkStatusEnum.failure);
+        return false;
+      },
+    }
+  ).finally(() => {
     messageListLoading.value = false;
   });
 }
@@ -173,25 +175,26 @@ async function fetchPrevMessageList() {
   if (currentFriendId && currentFriendMessageList.value.length > 0) {
     const firstMessageId = currentFriendMessageList.value[0].id;
     fetchPrevMessageLoading.value = true;
-    await requestWrapper(async () => {
-      const { data: response } = await service.message.listMessageByFriendId(
-        currentFriendId,
-        firstMessageId
-      );
-      hasPrev.value = response.data.hasPrev;
-      currentFriendMessageList.value = [
-        ...response.data.messageList,
-        ...currentFriendMessageList.value,
-      ];
-      fetchPrevMessageLoading.value = false;
-    }, [
-      false,
-      undefined,
-      () => {
+    await requestWrapper(
+      async () => {
+        const { data: response } = await service.message.listMessageByFriendId(
+          currentFriendId,
+          firstMessageId
+        );
+        hasPrev.value = response.data.hasPrev;
+        currentFriendMessageList.value = [
+          ...response.data.messageList,
+          ...currentFriendMessageList.value,
+        ];
         fetchPrevMessageLoading.value = false;
-        return false;
       },
-    ]);
+      {
+        errorHandler: () => {
+          fetchPrevMessageLoading.value = false;
+          return false;
+        },
+      }
+    );
   }
 }
 
@@ -450,4 +453,3 @@ onBeforeUnmount(() => {
   </main>
 </template>
 <style lang="scss" scoped></style>
-@/api/request

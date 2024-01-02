@@ -1,4 +1,4 @@
-import { requestWrapper } from "@/api/request";
+import { requestWrapper } from "@/api/request/index";
 import service from "@/api/services";
 import { IUser } from "@/api/services/user";
 import { defineStore } from "pinia";

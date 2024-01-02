@@ -3,7 +3,7 @@ import { FormInstance, FormRules } from "element-plus";
 import service, { ILoginForm } from "@/api/services";
 import router from "../router";
 import { useRoute } from "vue-router";
-import { requestWrapper } from "@/api/request";
+import { requestWrapper } from "@/api/request/index";
 import useUserStore from "@/store/user";
 import { storeToRefs } from "pinia";
 const { user } = storeToRefs(useUserStore());
@@ -77,4 +77,3 @@ const login = () => {
   }
 }
 </style>
-@/api/request

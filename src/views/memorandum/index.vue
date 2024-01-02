@@ -3,7 +3,7 @@ import service, { IMemorandum, MemorandumType } from "../../api/services";
 import { scrollToBottom } from "../../assets/tools";
 import { compressImage, copyToClipboard } from "../../assets/tools/common";
 import { ElMessage, ElMessageBox, InputInstance } from "element-plus";
-import { requestWrapper } from "@/api/request";
+import { requestWrapper } from "@/api/request/index";
 import {
   IResponseData,
   IWSResponse,
@@ -109,18 +109,20 @@ async function fetchMemorandumList() {
   }
 }
 function getMessageList() {
-  requestWrapper(async () => {
-    await fetchMemorandumList();
-    memorandumContentScrollBottom();
-    onConnectWebSocket();
-  }, [
-    true,
-    undefined,
-    () => {
-      linkStatusHandler(LinkStatusEnum.failure);
-      return false;
+  requestWrapper(
+    async () => {
+      await fetchMemorandumList();
+      memorandumContentScrollBottom();
+      onConnectWebSocket();
     },
-  ]);
+    {
+      isLoading: true,
+      errorHandler: () => {
+        linkStatusHandler(LinkStatusEnum.failure);
+        return false;
+      },
+    }
+  );
 }
 
 onMounted(() => {
@@ -361,4 +363,3 @@ function downloadFile(content: IMemorandum) {
   }
 }
 </style>
-@/api/request
