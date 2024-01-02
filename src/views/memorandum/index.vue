@@ -103,24 +103,24 @@ const addLinkTemplate = () => {
 const messageList = ref<Array<IMemorandum>>([]);
 // 获取消息列表
 async function fetchMemorandumList() {
-  const res = await service.memorandum.listMemorandum();
-  if (res.data) {
-    messageList.value = res.data;
+  const { data } = await service.memorandum.listMemorandum();
+  if (data.data) {
+    messageList.value = data.data;
   }
 }
 function getMessageList() {
-  requestWrapper(
-    async () => {
-      await fetchMemorandumList();
-      memorandumContentScrollBottom();
-      onConnectWebSocket();
-    },
+  requestWrapper(async () => {
+    await fetchMemorandumList();
+    memorandumContentScrollBottom();
+    onConnectWebSocket();
+  }, [
     true,
-    true,
+    undefined,
     () => {
       linkStatusHandler(LinkStatusEnum.failure);
-    }
-  );
+      return false;
+    },
+  ]);
 }
 
 onMounted(() => {
@@ -361,3 +361,4 @@ function downloadFile(content: IMemorandum) {
   }
 }
 </style>
+@/api/request

@@ -1,6 +1,7 @@
 import { fetchDownload } from "@/assets/tools";
 import { BaseService } from "../model";
 import { postRequest } from "../request";
+import { AxiosResponse } from "axios";
 
 export type FileResponse = {
   id: string;
@@ -12,7 +13,9 @@ export type FileResponse = {
 
 class File extends BaseService {
   upload(data: FormData) {
-    return postRequest(this.baseUrl + "/upload", data);
+    return postRequest(this.baseUrl + "/upload", data) as Promise<
+      AxiosResponse<FileResponse>
+    >;
   }
   async download(id: string, filename: string) {
     const res = await fetch(this.baseUrl + `/${id}/download`);

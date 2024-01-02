@@ -109,21 +109,25 @@ function onChangeCurrentFriend(friend: IFriend) {
     currentFriend.value = friend;
     currentFriendMessageList.value = [];
     messageListLoading.value = true;
-    const res = await listMessageByFriendId(currentFriend.value.friendId);
-    hasPrev.value = res.data.hasPrev;
-    currentFriendMessageList.value = res.data.messageList;
+    const { data: response } = await listMessageByFriendId(
+      currentFriend.value.friendId
+    );
+    hasPrev.value = response.data.hasPrev;
+    currentFriendMessageList.value = response.data.messageList;
     onMessageBoxScrollToBottom();
     isSP.value && onToggleShowFriendListVisible();
-  }, false).finally(() => {
+  }).finally(() => {
     messageListLoading.value = false;
   });
 }
 
 async function fetchMessageList() {
   if (currentFriend.value?.friendId) {
-    const res = await listMessageByFriendId(currentFriend.value.friendId);
-    hasPrev.value = res.data.hasPrev;
-    currentFriendMessageList.value = res.data.messageList;
+    const { data: response } = await listMessageByFriendId(
+      currentFriend.value.friendId
+    );
+    hasPrev.value = response.data.hasPrev;
+    currentFriendMessageList.value = response.data.messageList;
     onMessageBoxScrollToBottom();
   }
 }
@@ -131,28 +135,29 @@ async function fetchMessageList() {
 // 初始化
 // 获取朋友列表和第一个朋友的消息列表
 function init() {
-  requestWrapper(
-    async () => {
-      const res = await listFriendWithUnreadMsgCount();
-      friendList.value = res.data;
-      if (friendList.value.length > 0) {
-        needReConnect.value = true;
-        currentFriend.value = friendList.value[0];
-        messageListLoading.value = true;
-        const res2 = await listMessageByFriendId(currentFriend.value.friendId);
-        hasPrev.value = res2.data.hasPrev;
-        currentFriendMessageList.value = res2.data.messageList;
-        onMessageBoxScrollToBottom();
-        onConnectWebSocket();
-      }
-    },
+  requestWrapper(async () => {
+    const { data } = await listFriendWithUnreadMsgCount();
+    friendList.value = data.data;
+    if (friendList.value.length > 0) {
+      needReConnect.value = true;
+      currentFriend.value = friendList.value[0];
+      messageListLoading.value = true;
+      const { data: data2 } = await listMessageByFriendId(
+        currentFriend.value.friendId
+      );
+      hasPrev.value = data2.data.hasPrev;
+      currentFriendMessageList.value = data2.data.messageList;
+      onMessageBoxScrollToBottom();
+      onConnectWebSocket();
+    }
+  }, [
     true,
-    true,
+    undefined,
     () => {
       linkStatusHandler(LinkStatusEnum.failure);
       return false;
-    }
-  ).finally(() => {
+    },
+  ]).finally(() => {
     messageListLoading.value = false;
   });
 }
@@ -168,26 +173,25 @@ async function fetchPrevMessageList() {
   if (currentFriendId && currentFriendMessageList.value.length > 0) {
     const firstMessageId = currentFriendMessageList.value[0].id;
     fetchPrevMessageLoading.value = true;
-    await requestWrapper(
-      async () => {
-        const res = await service.message.listMessageByFriendId(
-          currentFriendId,
-          firstMessageId
-        );
-        hasPrev.value = res.data.hasPrev;
-        currentFriendMessageList.value = [
-          ...res.data.messageList,
-          ...currentFriendMessageList.value,
-        ];
-        fetchPrevMessageLoading.value = false;
-      },
+    await requestWrapper(async () => {
+      const { data: response } = await service.message.listMessageByFriendId(
+        currentFriendId,
+        firstMessageId
+      );
+      hasPrev.value = response.data.hasPrev;
+      currentFriendMessageList.value = [
+        ...response.data.messageList,
+        ...currentFriendMessageList.value,
+      ];
+      fetchPrevMessageLoading.value = false;
+    }, [
       false,
-      true,
+      undefined,
       () => {
         fetchPrevMessageLoading.value = false;
         return false;
-      }
-    );
+      },
+    ]);
   }
 }
 
@@ -446,3 +450,4 @@ onBeforeUnmount(() => {
   </main>
 </template>
 <style lang="scss" scoped></style>
+@/api/request

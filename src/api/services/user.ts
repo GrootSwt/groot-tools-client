@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import { BaseService, IRequestData } from "../model";
 import { getRequest } from "../request";
 
@@ -14,7 +15,9 @@ export interface IGetUserInfoResponse extends IRequestData {
 
 class User extends BaseService {
   requestUserInfo() {
-    return getRequest(this.baseUrl) as Promise<IGetUserInfoResponse>;
+    return getRequest(this.baseUrl) as Promise<
+      AxiosResponse<IGetUserInfoResponse>
+    >;
   }
 }
 

@@ -6,38 +6,44 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
+/**
+ * @member fullScreenLoadingController 全屏loading控制器
+ * @member createAxiosDefaults axios实例化默认配置
+ * @member requestWrapperConfigDefaults 请求包装器配置默认配置（是否开启全屏loading、abortController、customErrorHandler）
+ * @method requestInterceptorPreHandler 请求拦截器前置处理器（token设定）
+ * @method responseInterceptorPreHandler 响应拦截器前置处理器
+ * @method nonResponseErrorDefaultHandler 非响应错误处理器
+ * @method responseErrorDefaultHandler 响应错误处理器
+ * @method requestWrapperPreHandler 请求包装器前置处理器（例如：网络异常、登录状态校验等处理）
+ */
 export type UseRequestWrapperConfig = {
-  fullScreenLoadingConfig?: {
+  fullScreenLoadingController?: {
     openFullscreenLoading: () => Promise<void>;
     closeFullscreenLoading: () => Promise<void>;
   };
-  // axios实例化默认配置
   createAxiosDefaults?: CreateAxiosDefaults;
-  // 请求拦截器前置处理器
+  requestWrapperConfigDefaults?: RequestWrapperConfig;
   requestInterceptorPreHandler?: (
     config: InternalAxiosRequestConfig
   ) => Promise<InternalAxiosRequestConfig>;
-  // 响应拦截器前置处理器
-  responseInterceptorPreHanlder?: (
+  responseInterceptorPreHandler?: (
     response: AxiosResponse
   ) => Promise<AxiosResponse>;
-  // 非响应错误处理器
   nonResponseErrorDefaultHandler: (error: AxiosError) => Promise<void>;
-  // 响应错误处理器
   responseErrorDefaultHandler: (response: AxiosResponse) => Promise<void>;
-  // 请求包装器前置处理器（例如：网络异常、登录状态校验等处理）
   requestWrapperPreHandler?: () => Promise<boolean>;
-  // 请求包装器配置默认配置
-  requestWrapperConfigDefaults?: RequestWrapperConfig;
 };
 
+/**
+ * 请求包装器配置项
+ * @member isLoading 是否开启全局定义的loading效果
+ * @member abortController 终止请求控制器
+ * @method errorHandler 自定义异常处理器
+ */
 export type RequestWrapperConfig = {
-  // 全屏加载
-  fullscreenLoading?: boolean;
-  // 当请求包装器中有错误发生时，终止其他请求
+  isLoading?: boolean;
   abortController?: AbortController;
-  // 禁用默认错误处理器，使用自定义错误处理
-  customErrorHandler?: (error: AxiosError) => Promise<boolean> | boolean;
+  errorHandler?: (error: AxiosError) => Promise<boolean> | boolean;
 };
 
 /**
@@ -49,10 +55,10 @@ export function useRequestWrapper(
   useRequestWrapperConfig: UseRequestWrapperConfig
 ) {
   const {
-    fullScreenLoadingConfig,
+    fullScreenLoadingController,
     createAxiosDefaults,
     requestInterceptorPreHandler,
-    responseInterceptorPreHanlder,
+    responseInterceptorPreHandler,
     requestWrapperPreHandler,
     requestWrapperConfigDefaults,
     nonResponseErrorDefaultHandler,
@@ -70,8 +76,8 @@ export function useRequestWrapper(
 
   axiosInstance.interceptors.response.use(
     async (response) => {
-      if (responseInterceptorPreHanlder) {
-        return await responseInterceptorPreHanlder(response);
+      if (responseInterceptorPreHandler) {
+        return await responseInterceptorPreHandler(response);
       }
       return response;
     },
@@ -90,40 +96,35 @@ export function useRequestWrapper(
     businessRequest: () => Promise<unknown>,
     requestWrapperConfig?: RequestWrapperConfig
   ) {
-    const { fullscreenLoading, abortController, customErrorHandler } =
-      requestWrapperConfig ||
-        requestWrapperConfigDefaults || {
-          fullscreenLoading: false,
-        };
+    const { isLoading, abortController, errorHandler } = requestWrapperConfig ||
+      requestWrapperConfigDefaults || { isLoading: false };
     try {
       if (requestWrapperPreHandler && !(await requestWrapperPreHandler())) {
         return;
       }
-      if (fullscreenLoading && fullScreenLoadingConfig) {
-        await fullScreenLoadingConfig.openFullscreenLoading();
+      if (isLoading && fullScreenLoadingController) {
+        await fullScreenLoadingController.openFullscreenLoading();
       }
       return await businessRequest();
     } catch (error) {
       const axiosError = error as AxiosError;
-      if (abortController) {
-        abortController.abort();
-      }
+      abortController && abortController.abort();
       if (
-        customErrorHandler &&
-        ((typeof customErrorHandler === "function" &&
-          (await customErrorHandler(error as AxiosError))) ||
-          typeof customErrorHandler === "boolean")
+        !errorHandler ||
+        (typeof errorHandler === "function" &&
+          !(await errorHandler(error as AxiosError)))
       ) {
-        return;
+        if (axiosError.response) {
+          await responseErrorDefaultHandler(axiosError.response);
+        } else {
+          await nonResponseErrorDefaultHandler(axiosError);
+        }
+      } else if (errorHandler && typeof errorHandler === "boolean") {
+        throw error;
       }
-
-      if (axiosError.response) {
-        return await responseErrorDefaultHandler(axiosError.response);
-      }
-      return await nonResponseErrorDefaultHandler(axiosError);
     } finally {
-      if (fullscreenLoading && fullScreenLoadingConfig) {
-        await fullScreenLoadingConfig.closeFullscreenLoading();
+      if (isLoading && fullScreenLoadingController) {
+        await fullScreenLoadingController.closeFullscreenLoading();
       }
     }
   }

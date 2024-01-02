@@ -25,8 +25,8 @@ const login = () => {
   loginFormRef.value?.validate((valid) => {
     if (valid) {
       requestWrapper(async () => {
-        const res = await service.login.login(loginForm);
-        user.value = res.data;
+        const { data: response } = await service.login.login(loginForm);
+        user.value = response.data;
         router.push({ path: redirect ? (redirect as string) : "/" });
       });
     }
@@ -77,3 +77,4 @@ const login = () => {
   }
 }
 </style>
+@/api/request

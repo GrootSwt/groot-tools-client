@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import { BaseService, IResponseData } from "../model";
 import { getRequest } from "../request";
 
@@ -28,7 +29,7 @@ class Message extends BaseService {
     return getRequest(
       this.baseUrl + `/${friendId}/listMessage`,
       params
-    ) as Promise<IListMessageResponseData>;
+    ) as Promise<AxiosResponse<IListMessageResponseData>>;
   }
 }
 

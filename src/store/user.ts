@@ -9,9 +9,9 @@ const useUserStore = defineStore(
     const user = ref<IUser | null>(null);
     function requestUserInfo() {
       requestWrapper(async () => {
-        const res = await service.user.requestUserInfo();
-        user.value = res.data;
-      }, false);
+        const { data: response } = await service.user.requestUserInfo();
+        user.value = response.data;
+      });
     }
     function clearUserInfo() {
       user.value = null;

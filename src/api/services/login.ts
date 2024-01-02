@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import { BaseService, IRequestData } from "../model";
 import { postRequest } from "../request";
 import { IUser } from "./user";
@@ -13,10 +14,9 @@ export interface ILoginResponseData extends IRequestData {
 
 class Login extends BaseService {
   login(form: ILoginForm) {
-    return postRequest(
-      this.baseUrl + "/login",
-      form
-    ) as Promise<ILoginResponseData>;
+    return postRequest(this.baseUrl + "/login", form) as Promise<
+      AxiosResponse<ILoginResponseData>
+    >;
   }
 }
 

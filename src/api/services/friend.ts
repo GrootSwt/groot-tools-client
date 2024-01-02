@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import { BaseService, IResponseData } from "../model";
 import { getRequest } from "../request";
 
@@ -25,14 +26,14 @@ export interface IListFriendWithUnreadMsgCountResponseData
 
 class Friend extends BaseService {
   listFriend() {
-    return getRequest(
-      this.baseUrl + "/listFriend"
-    ) as Promise<IListFriendResponseData>;
+    return getRequest(this.baseUrl + "/listFriend") as Promise<
+      AxiosResponse<IListFriendResponseData>
+    >;
   }
   listFriendWithUnreadMsgCount() {
     return getRequest(
       this.baseUrl + "/listFriendWithUnreadMsgCount"
-    ) as Promise<IListFriendWithUnreadMsgCountResponseData>;
+    ) as Promise<AxiosResponse<IListFriendWithUnreadMsgCountResponseData>>;
   }
 }
 
