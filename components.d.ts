@@ -25,7 +25,7 @@ declare module 'vue' {
     IEpOperation: typeof import('~icons/ep/operation')['default']
     IEpUpload: typeof import('~icons/ep/upload')['default']
     IEpUploadFilled: typeof import('~icons/ep/upload-filled')['default']
-    Layout: typeof import('./src/components/layout/index.vue')['default']
+    LayoutView: typeof import('./src/components/layout/LayoutView.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterLinkView: typeof import('./src/components/RouterLinkView.vue')['default']
     RouterView: typeof import('vue-router')['RouterView']

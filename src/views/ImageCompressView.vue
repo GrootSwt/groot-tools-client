@@ -5,7 +5,7 @@ import {
   getImageFileInfo,
   downloadFile,
   validateNumeric,
-} from "../../assets/tools/index";
+} from "../assets/tools";
 import {
   genFileId,
   UploadFile,

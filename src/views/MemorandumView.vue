@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import service, { IMemorandum, MemorandumType } from "../../api/services";
-import { scrollToBottom } from "../../assets/tools";
-import { compressImage, copyToClipboard } from "../../assets/tools/common";
+import service, { IMemorandum, MemorandumType } from "../api/services";
+import { scrollToBottom } from "../assets/tools";
+import { compressImage, copyToClipboard } from "../assets/tools/common";
 import { ElMessage, ElMessageBox, InputInstance } from "element-plus";
 import { requestWrapper } from "@/api/request/index";
 import {

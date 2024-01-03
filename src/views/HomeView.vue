@@ -23,6 +23,12 @@ import RouterLinkView from "@/components/RouterLinkView.vue";
         >
           电子签名
         </RouterLinkView>
+        <RouterLinkView
+          to="/js-to-json"
+          :style="{ backgroundColor: randomColor() }"
+        >
+          JS2JSON
+        </RouterLinkView>
       </section>
     </article>
     <article class="border border-red-400 rounded p-3 relative">

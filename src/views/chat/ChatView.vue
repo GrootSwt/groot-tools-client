@@ -5,7 +5,7 @@ import service, {
   IFriendWithUnreadMsgCount,
   IMessage,
 } from "@/api/services";
-import { requestWrapper } from "@/api/request/index";
+import { requestWrapper } from "@/api/request";
 import { scrollToBottom, formatDateTime } from "@/assets/tools";
 import {
   WSOperationTypeEnum,

@@ -5,27 +5,30 @@ import useWSStore from "@/store/ws";
 import { storeToRefs } from "pinia";
 import useLoginStore from "@/store/login";
 
+import LayoutView from "@/components/layout/LayoutView.vue";
+import HomeView from "../views/HomeView.vue";
+import ErrorView from "../views/ErrorView.vue";
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: "/",
-      component: () => import("../components/layout/index.vue"),
+      component: LayoutView,
       redirect: { name: "home" },
       children: [
         {
           path: "/",
           name: "home",
-          component: () => import("../views/Home.vue"),
+          component: HomeView,
           meta: {
             title: "首页",
           },
         },
-
         {
           path: "/memorandum",
           name: "memorandum",
-          component: () => import("../views/memorandum/index.vue"),
+          component: () => import("../views/MemorandumView.vue"),
           meta: {
             auth: true,
             title: "备忘录",
@@ -35,7 +38,7 @@ const router = createRouter({
         {
           path: "/chat",
           name: "chat",
-          component: () => import("../views/chat/index.vue"),
+          component: () => import("../views/chat/ChatView.vue"),
           meta: {
             auth: true,
             title: "聊天",
@@ -45,7 +48,7 @@ const router = createRouter({
         {
           path: "/image-compress",
           name: "imageCompress",
-          component: () => import("../views/image-compress/index.vue"),
+          component: () => import("../views/ImageCompressView.vue"),
           meta: {
             title: "图片压缩",
           },
@@ -53,18 +56,25 @@ const router = createRouter({
         {
           path: "/electronic-signature",
           name: "electronicSignature",
-          component: () => import("../views/electronic-signature/index.vue"),
+          component: () => import("../views/ElectronicSignatureView.vue"),
           meta: {
             title: "电子签名",
           },
         },
+        {
+          path: "/js-to-json",
+          name: "jsToJson",
+          component: () => import("../views/JsToJsonView.vue"),
+          meta: {
+            title: "JS To JSON",
+          },
+        },
       ],
     },
-
     {
       path: "/login",
       name: "login",
-      component: () => import("../views/Login.vue"),
+      component: () => import("../views/LoginView.vue"),
       meta: {
         title: "登录",
       },
@@ -72,7 +82,7 @@ const router = createRouter({
     {
       path: "/:pathMatch(.*)*",
       name: "error",
-      component: () => import("../views/ErrorView.vue"),
+      component: ErrorView,
     },
   ],
 });
