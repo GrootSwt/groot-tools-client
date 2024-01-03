@@ -47,9 +47,9 @@ export type RequestWrapperConfig = {
 };
 
 /**
- * 请求处理器生成器
- * @param useRequestWrapperConfig 请求处理器生成器配置
- * @returns 请求处理器
+ * 请求包装器生成器
+ * @param useRequestWrapperConfig 请求包装器生成器配置
+ * @returns 请求包装器
  */
 export function useRequestWrapper(
   useRequestWrapperConfig: UseRequestWrapperConfig
