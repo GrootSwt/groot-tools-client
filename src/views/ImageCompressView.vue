@@ -96,9 +96,9 @@ const downloadCompressedFile = () => {
 };
 </script>
 <template>
-  <section class="image-compress-container">
+  <section class="m-w-[1200px] mx-auto p-6">
     <el-upload
-      class="m-auto upload-box"
+      class="m-auto m-w-[520px]"
       ref="uploadRef"
       drag
       accept="image/png, image/jpeg"
@@ -117,25 +117,25 @@ const downloadCompressedFile = () => {
         <div class="el-upload__tip font-bold">仅支持上传一张图片</div>
       </template>
     </el-upload>
-    <section class="origin-image-info" v-if="originImageFileInfo">
+    <section class="" v-if="originImageFileInfo">
       <h3 class="mt-6">原图片文件信息：</h3>
       <article class="flex flex-wrap gap-3 mt-6">
-        <h5 class="flex-none info-item">
+        <h5 class="flex-none bg-slate-100 px-1 py-2">
           大小: {{ originImageFileInfo.size }}
         </h5>
-        <h5 class="flex-none info-item">
+        <h5 class="flex-none bg-slate-100 px-1 py-2">
           宽度: {{ originImageFileInfo.width }}
         </h5>
-        <h5 class="flex-none info-item">
+        <h5 class="flex-none bg-slate-100 px-1 py-2">
           高度: {{ originImageFileInfo.height }}
         </h5>
       </article>
     </section>
-    <section class="image-compress-params" v-if="originImageFileInfo">
+    <section class="mt-6" v-if="originImageFileInfo">
       <h3>压缩后图片参数设置：</h3>
       <article class="flex flex-wrap gap-3 mt-6">
         <el-input
-          class="flex-none"
+          class="flex-none !w-[220px]"
           v-model="compressedFileParams.maxSize"
           @input="validateNumeric(compressedFileParams, 'maxSize')"
           placeholder="max size"
@@ -144,7 +144,7 @@ const downloadCompressedFile = () => {
           <template #append>KB</template>
         </el-input>
         <el-input
-          class="flex-none"
+          class="flex-none !w-[220px]"
           v-model="compressedFileParams.maxWidth"
           @input="validateNumeric(compressedFileParams, 'maxWidth')"
           placeholder="max width"
@@ -153,7 +153,7 @@ const downloadCompressedFile = () => {
           <template #append>px</template>
         </el-input>
         <el-input
-          class="flex-none"
+          class="flex-none !w-[220px]"
           v-model="compressedFileParams.maxHeight"
           @input="validateNumeric(compressedFileParams, 'maxHeight')"
           placeholder="max height"
@@ -162,14 +162,13 @@ const downloadCompressedFile = () => {
           <template #append>px</template>
         </el-input>
       </article>
-      <el-button
-        class="mt-6"
-        type="primary"
+      <button
+        class="mt-6 bg-slate-500 text-white px-2 py-1 rounded"
         @click="compress"
         :loading="compressLoading"
       >
         {{ compressLoading ? "压缩中" : "压缩" }}
-      </el-button>
+      </button>
     </section>
     <section class="compressed-image-info" v-if="compressedImageFileInfo">
       <h3 class="mt-6">压缩后的图片信息：</h3>
@@ -191,33 +190,12 @@ const downloadCompressedFile = () => {
           :preview-src-list="[compressedFileUrl]"
         ></el-image>
       </article>
-      <el-button type="primary" class="mt-6" @click="downloadCompressedFile">
+      <button
+        class="mt-6 bg-slate-500 text-white px-2 py-1 rounded"
+        @click="downloadCompressedFile"
+      >
         下载
-      </el-button>
+      </button>
     </section>
   </section>
 </template>
-<style lang="scss" scoped>
-.image-compress-container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 24px;
-  .upload-box {
-    max-width: 520px;
-  }
-  .origin-image-info,
-  .compressed-image-info {
-    .info-item {
-      background-color: #f3f6f9;
-      padding: 4px 8px;
-      border-radius: 4px;
-    }
-  }
-  .image-compress-params {
-    margin-top: 24px;
-    :deep(.el-input) {
-      width: 220px;
-    }
-  }
-}
-</style>

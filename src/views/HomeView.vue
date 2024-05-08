@@ -51,4 +51,3 @@ import RouterLinkView from "@/components/RouterLinkView.vue";
     </article>
   </section>
 </template>
-<style lang="scss" scoped></style>

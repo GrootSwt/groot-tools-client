@@ -1,4 +1,4 @@
-import { AxiosResponse } from "axios";
+import { AxiosRequestConfig, AxiosResponse } from "axios";
 import { BaseService, IResponse, IResponseData } from "../model";
 import { deleteRequest, getRequest, postRequest } from "../request";
 import { FileResponse } from "./file";
@@ -23,10 +23,12 @@ export interface IListMemorandumResponseData extends IResponseData {
 }
 
 class Memorandum extends BaseService {
-  listMemorandum() {
-    return getRequest(this.baseUrl + `/memorandum/listMemorandum`) as Promise<
-      AxiosResponse<IListMemorandumResponseData>
-    >;
+  listMemorandum(config?: AxiosRequestConfig) {
+    return getRequest(
+      this.baseUrl + `/memorandum/listMemorandum`,
+      null,
+      config
+    ) as Promise<AxiosResponse<IListMemorandumResponseData>>;
   }
   deleteMemorandumById(id: string) {
     return deleteRequest(

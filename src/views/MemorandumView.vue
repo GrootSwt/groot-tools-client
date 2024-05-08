@@ -102,21 +102,25 @@ const addLinkTemplate = () => {
 // 初始加载获取消息列表
 const messageList = ref<Array<IMemorandum>>([]);
 // 获取消息列表
-async function fetchMemorandumList() {
-  const { data } = await service.memorandum.listMemorandum();
-  if (data.data) {
-    messageList.value = data.data;
+async function fetchMemorandumList(signal?: AbortSignal) {
+  const {
+    data: { data },
+  } = await service.memorandum.listMemorandum({
+    signal,
+  });
+  if (data) {
+    messageList.value = data;
   }
 }
 function getMessageList() {
   requestWrapper(
-    async () => {
-      await fetchMemorandumList();
+    async ({ abortController }) => {
+      await fetchMemorandumList(abortController.signal);
       memorandumContentScrollBottom();
       onConnectWebSocket();
     },
     {
-      isLoading: true,
+      enabledFullScreenLoading: true,
       errorHandler: () => {
         linkStatusHandler(LinkStatusEnum.failure);
         return false;
@@ -212,9 +216,16 @@ function downloadFile(content: IMemorandum) {
 }
 </script>
 <template>
-  <div class="memorandum-container">
-    <main ref="memorandumListRef" class="memorandum-main">
-      <div class="content-box" v-for="item in messageList" :key="item.id">
+  <div class="flex flex-col h-full">
+    <main
+      ref="memorandumListRef"
+      class="flex-1 overflow-y-auto p-4 w-full max-w-[640px] m-auto flex flex-col gap-3"
+    >
+      <div
+        class="flex items-start justify-between leading-normal px-4 py-6 bg-gray-100 rounded-2xl whitespace-pre-wrap"
+        v-for="item in messageList"
+        :key="item.id"
+      >
         <div
           v-if="item.contentType === MemorandumType.TEXT"
           v-html="getMessageHTML(item.content)"
@@ -224,10 +235,9 @@ function downloadFile(content: IMemorandum) {
             {{ item.file?.originalName }}
           </span>
         </div>
-        <div class="memorandum-operation">
+        <div class="flex-none">
           <el-button
             v-if="item.contentType === MemorandumType.TEXT"
-            class="copy-btn"
             size="small"
             circle
             @click="copyToClipboard(item.content)"
@@ -238,7 +248,7 @@ function downloadFile(content: IMemorandum) {
           </el-button>
           <el-button
             v-else-if="item.contentType === MemorandumType.FILE"
-            class="copy-btn"
+            class="ml-4"
             size="small"
             circle
             @click="downloadFile(item)"
@@ -248,7 +258,7 @@ function downloadFile(content: IMemorandum) {
             </el-icon>
           </el-button>
           <el-button
-            class="copy-btn"
+            class="ml-4"
             size="small"
             circle
             @click="deleteMessage(item)"
@@ -261,7 +271,7 @@ function downloadFile(content: IMemorandum) {
       </div>
     </main>
     <footer
-      class="memorandum-footer flex flex-col gap-1 bg-slate-200 rounded-md p-1"
+      class="flex-none w-full max-w-[640px] mx-auto flex flex-col gap-1 bg-slate-200 rounded-md p-1"
     >
       <section class="flex items-center gap-1 px-2">
         <el-icon @click="addLinkTemplate" class="cursor-pointer">
@@ -289,77 +299,16 @@ function downloadFile(content: IMemorandum) {
           maxlength="2000"
           @keyup.ctrl.enter="sendMessage()"
         />
-        <div class="operation">
-          <el-button
+        <div class="ml-1">
+          <button
             :disabled="disabledSend"
-            class="send-btn"
+            class="bg-gray-500 rounded-xl text-white p-2 h-full disabled:text-gray-300"
             @click="sendMessage()"
           >
             发送
-          </el-button>
+          </button>
         </div>
       </section>
     </footer>
   </div>
 </template>
-<style lang="scss" scoped>
-.memorandum-container {
-  display: flex;
-  height: 100%;
-  flex-direction: column;
-  .memorandum-main {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1em;
-    width: 100%;
-    max-width: 640px;
-    margin: auto;
-    .content-box {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      line-height: 1.5em;
-      padding: 1em 1.5em;
-      background-color: #f5f5f5;
-      border-radius: 1em;
-      white-space: pre-wrap;
-      margin-top: 12px;
-      &:first-child {
-        margin-top: 0;
-      }
-      .memorandum-operation {
-        flex: none;
-        .copy-btn {
-          flex: none;
-          margin-left: 1em;
-        }
-      }
-    }
-  }
-  .memorandum-footer {
-    flex: none;
-    width: 100%;
-    max-width: 640px;
-    margin: auto;
-    :deep(.el-textarea__inner) {
-      resize: none;
-      border: none;
-      box-shadow: none;
-      border-radius: 0;
-    }
-    .operation {
-      position: relative;
-      display: flex;
-      gap: 0.25em;
-      flex-direction: column;
-      margin-left: 4px;
-      .el-button {
-        border: none;
-        margin-left: 0;
-        border-radius: 0;
-        height: 100%;
-      }
-    }
-  }
-}
-</style>

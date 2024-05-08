@@ -41,8 +41,7 @@ export type UseRequestWrapperConfig = {
  * @method errorHandler 自定义异常处理器
  */
 export type RequestWrapperConfig = {
-  isLoading?: boolean;
-  abortController?: AbortController;
+  enabledFullScreenLoading?: boolean;
   errorHandler?: (error: AxiosError) => Promise<boolean> | boolean;
 };
 
@@ -86,6 +85,10 @@ export function useRequestWrapper(
     }
   );
 
+  type RequestWrapper = {
+    abortController: AbortController;
+  };
+
   /**
    * 请求包装器
    * @param businessRequest 业务请求
@@ -93,26 +96,27 @@ export function useRequestWrapper(
    * @returns 业务请求结果
    */
   async function requestWrapper(
-    businessRequest: () => Promise<unknown>,
+    businessRequest: ({ abortController }: RequestWrapper) => Promise<unknown>,
     requestWrapperConfig?: RequestWrapperConfig
   ) {
-    const { isLoading, abortController, errorHandler } = requestWrapperConfig ||
-      requestWrapperConfigDefaults || { isLoading: false };
+    const { enabledFullScreenLoading, errorHandler } = requestWrapperConfig ||
+      requestWrapperConfigDefaults || { enabledFullScreenLoading: false };
+    const abortController = new AbortController();
     try {
       if (requestWrapperPreHandler && !(await requestWrapperPreHandler())) {
         return;
       }
-      if (isLoading && fullScreenLoadingController) {
+      if (enabledFullScreenLoading && fullScreenLoadingController) {
         await fullScreenLoadingController.openFullscreenLoading();
       }
-      return await businessRequest();
+      return await businessRequest({ abortController });
     } catch (error) {
       const axiosError = error as AxiosError;
-      abortController && abortController.abort();
+      abortController.abort();
       if (
         !errorHandler ||
         (typeof errorHandler === "function" &&
-          !(await errorHandler(error as AxiosError)))
+          !(await errorHandler(axiosError)))
       ) {
         if (axiosError.response) {
           await responseErrorDefaultHandler(axiosError.response);
@@ -123,7 +127,7 @@ export function useRequestWrapper(
         throw error;
       }
     } finally {
-      if (isLoading && fullScreenLoadingController) {
+      if (enabledFullScreenLoading && fullScreenLoadingController) {
         await fullScreenLoadingController.closeFullscreenLoading();
       }
     }

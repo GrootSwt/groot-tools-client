@@ -16,4 +16,3 @@ function toHomeView() {
     <el-button @click="toHomeView" size="large" class="mt-6">首页</el-button>
   </section>
 </template>
-<style lang="scss" scoped></style>

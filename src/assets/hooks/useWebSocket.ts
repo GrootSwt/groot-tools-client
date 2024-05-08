@@ -14,7 +14,7 @@ export function useWebSocket(
   needReConnect: Ref<boolean>,
   linkSuccess?: () => void,
   linkFailure?: () => void,
-  reConnectWebSocketCallback?: () => void
+  reConnectWebSocketCallback?: (single?: AbortSignal) => void
 ) {
   const wsStore = useWSStore();
   /**

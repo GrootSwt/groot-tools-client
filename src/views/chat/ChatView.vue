@@ -153,7 +153,7 @@ function init() {
       }
     },
     {
-      isLoading: true,
+      enabledFullScreenLoading: true,
       errorHandler: () => {
         linkStatusHandler(LinkStatusEnum.failure);
         return false;
@@ -343,7 +343,7 @@ onBeforeUnmount(() => {
     <el-button
       circle
       plain
-      class="fixed z-10 left-4 top-16"
+      class="fixed z-10 left-4 top-16 bg-red-300"
       :class="{
         '!hidden': !isSP,
       }"
@@ -446,10 +446,14 @@ onBeforeUnmount(() => {
             :disabled="disabledSend"
             @keyup.ctrl.enter="sendMessage"
           ></el-input>
-          <el-button class="ml-3 h-full" @click="sendMessage">发送</el-button>
+          <button
+            class="ml-3 h-full rounded-xl bg-neutral-500 text-white px-2 py-1 disabled:text-neutral-300"
+            @click="sendMessage"
+          >
+            发送
+          </button>
         </section>
       </article>
     </section>
   </main>
 </template>
-<style lang="scss" scoped></style>

@@ -20,5 +20,3 @@ if (isLogin.value) {
 <template>
   <router-view />
 </template>
-
-<style scoped></style>

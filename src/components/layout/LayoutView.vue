@@ -24,10 +24,10 @@ function onLogout() {
 }
 </script>
 <template>
-  <section class="h-full bg-slate-50">
+  <section class="h-full bg-slate-50 flex flex-col">
     <header
       id="header"
-      class="flex items-center justify-between bg-slate-200 h-12 px-3"
+      class="flex-none flex items-center justify-between bg-slate-200 h-12 px-3"
     >
       <!-- 回到首页 -->
       <article>
@@ -54,15 +54,8 @@ function onLogout() {
         <el-button v-else @click="onLogout">注销</el-button>
       </article>
     </header>
-    <main id="main" class="main">
+    <main id="main" class="flex-1 overflow-auto">
       <RouterView />
     </main>
   </section>
 </template>
-<style lang="scss" scoped>
-.main {
-  height: calc(100% - 48px);
-  overflow-y: auto;
-  overflow-y: overlay;
-}
-</style>
