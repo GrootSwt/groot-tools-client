@@ -20,6 +20,7 @@ import useCommonStore from "@/store/common";
 import { storeToRefs } from "pinia";
 import FriendList from "./components/FriendList.vue";
 import { useWebSocket } from "@/assets/hooks";
+import ButtonView from "@/components/ButtonView.vue";
 
 const needReConnect = ref(false);
 
@@ -340,10 +341,10 @@ onBeforeUnmount(() => {
     class="flex flex-col justify-center items-center h-full text-slate-100 text-base"
   >
     <!-- 响应式为sp的时候显示查看朋友列表按钮 -->
-    <el-button
+    <ButtonView
       circle
       plain
-      class="fixed z-10 left-4 top-16 bg-red-300"
+      class="fixed z-10 left-4 top-16 bg-green-300 !border-none !rounded-full aspect-square flex items-center justify-center"
       :class="{
         '!hidden': !isSP,
       }"
@@ -352,7 +353,7 @@ onBeforeUnmount(() => {
       <el-icon :size="16">
         <i-ep-operation />
       </el-icon>
-    </el-button>
+    </ButtonView>
     <section
       class="mt-3 flex justify-center gap-6 items-center h-4/5 w-4/5 max-w-5xl p-6 rounded-3xl bg-slate-300 shadow-xl shadow-slate-400/50"
       :class="{
@@ -446,12 +447,12 @@ onBeforeUnmount(() => {
             :disabled="disabledSend"
             @keyup.ctrl.enter="sendMessage"
           ></el-input>
-          <button
-            class="ml-3 h-full rounded-xl bg-neutral-500 text-white px-2 py-1 disabled:text-neutral-300"
+          <ButtonView
+            class="ml-3 h-full !border-none bg-neutral-500 text-white disabled:text-neutral-300"
             @click="sendMessage"
           >
             发送
-          </button>
+          </ButtonView>
         </section>
       </article>
     </section>

@@ -13,6 +13,7 @@ import {
   UploadProps,
   UploadRawFile,
 } from "element-plus";
+import ButtonView from "@/components/ButtonView.vue";
 
 const uploadRef = ref<UploadInstance>();
 const originFile = ref<UploadFile>();
@@ -162,13 +163,9 @@ const downloadCompressedFile = () => {
           <template #append>px</template>
         </el-input>
       </article>
-      <button
-        class="mt-6 bg-slate-500 text-white px-2 py-1 rounded"
-        @click="compress"
-        :loading="compressLoading"
-      >
+      <ButtonView class="mt-6" @click="compress" :loading="compressLoading">
         {{ compressLoading ? "压缩中" : "压缩" }}
-      </button>
+      </ButtonView>
     </section>
     <section class="compressed-image-info" v-if="compressedImageFileInfo">
       <h3 class="mt-6">压缩后的图片信息：</h3>
@@ -190,12 +187,9 @@ const downloadCompressedFile = () => {
           :preview-src-list="[compressedFileUrl]"
         ></el-image>
       </article>
-      <button
-        class="mt-6 bg-slate-500 text-white px-2 py-1 rounded"
-        @click="downloadCompressedFile"
-      >
+      <ButtonView class="mt-6" @click="downloadCompressedFile">
         下载
-      </button>
+      </ButtonView>
     </section>
   </section>
 </template>

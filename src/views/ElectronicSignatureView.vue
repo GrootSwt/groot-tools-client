@@ -7,6 +7,8 @@ import {
   debounce,
 } from "@/assets/tools";
 import { ElMessage } from "element-plus";
+import ButtonView from "@/components/ButtonView.vue";
+
 const defaultFontColor = "#000000";
 const defaultLineWidth = 5;
 const fontColor = ref(defaultFontColor);
@@ -328,10 +330,9 @@ onBeforeUnmount(() => {
           <span class="flex-none">字体颜色：</span>
           <el-color-picker v-model="fontColor" @change="setStrokeStyle" />
         </article>
-        <article class="flex items-center">
+        <article class="flex-1 flex items-center">
           <span class="flex-none">字体宽度：</span>
           <el-input-number
-            class="w-12"
             v-model="lineWidth"
             :min="2"
             :max="10"
@@ -341,10 +342,10 @@ onBeforeUnmount(() => {
           ></el-input-number>
         </article>
       </section>
-      <section class="flex-none">
-        <el-button type="danger" @click="clearCanvas">清空</el-button>
-        <el-button type="success" @click="redraw">重绘</el-button>
-        <el-button type="primary" @click="downloadFileByCanvas">下载</el-button>
+      <section class="flex-none flex gap-3">
+        <ButtonView @click="clearCanvas"> 清空 </ButtonView>
+        <ButtonView @click="redraw"> 重绘 </ButtonView>
+        <ButtonView @click="downloadFileByCanvas"> 下载 </ButtonView>
       </section>
     </section>
     <section ref="canvasBoxRef" class="flex-1 bg-slate-300">

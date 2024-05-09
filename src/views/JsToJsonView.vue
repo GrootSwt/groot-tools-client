@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ElMessage } from "element-plus";
 import { copyToClipboard } from "@/assets/tools";
+import ButtonView from "@/components/ButtonView.vue";
 
 const jsValue = ref<string>();
 
@@ -68,8 +69,10 @@ function copy(copyType: "preserveFormat" | "compress") {
       <div class="flex justify-between items-center">
         <h5>JSON对象：</h5>
         <div v-if="!!jsonValue">
-          <el-button @click="copy('preserveFormat')">格式复制</el-button>
-          <el-button @click="copy('compress')">压缩复制</el-button>
+          <ButtonView @click="copy('preserveFormat')">格式复制</ButtonView>
+          <ButtonView @click="copy('compress')" class="ml-2">
+            压缩复制
+          </ButtonView>
         </div>
       </div>
       <el-input

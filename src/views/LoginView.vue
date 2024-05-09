@@ -6,6 +6,8 @@ import { useRoute } from "vue-router";
 import { requestWrapper } from "@/api/request/index";
 import useUserStore from "@/store/user";
 import { storeToRefs } from "pinia";
+import ButtonView from "@/components/ButtonView.vue";
+
 const { user } = storeToRefs(useUserStore());
 
 const route = useRoute();
@@ -21,7 +23,8 @@ const loginForm = reactive<ILoginForm>({
   account: "",
   password: "",
 });
-const login = () => {
+const login = (e: Event) => {
+  e.preventDefault();
   loginFormRef.value?.validate((valid) => {
     if (valid) {
       requestWrapper(async () => {
@@ -43,6 +46,7 @@ const login = () => {
       ref="loginFormRef"
       label-position="top"
       class="w-[360px] max-w-[80vw]"
+      @submit.prevent
     >
       <el-form-item label="账号" prop="account">
         <el-input maxlength="20" v-model="loginForm.account" />
@@ -52,11 +56,11 @@ const login = () => {
           type="password"
           maxlength="20"
           v-model="loginForm.password"
-          @keydown.enter="login()"
+          @keydown.enter="(event) => login(event)"
         />
       </el-form-item>
       <div class="text-right">
-        <el-button @click="login()">登录</el-button>
+        <ButtonView @click="(event) => login(event)">登录</ButtonView>
       </div>
     </el-form>
   </div>

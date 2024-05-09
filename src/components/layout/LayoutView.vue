@@ -7,6 +7,7 @@ import useLoginStore from "@/store/login";
 import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
 import { clearLoginStatusAndUser } from "@/assets/tools";
+import ButtonView from "../ButtonView.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -50,8 +51,16 @@ function onLogout() {
         </h4>
       </article>
       <article>
-        <el-button v-if="!isLogin" @click="onLogin">登录</el-button>
-        <el-button v-else @click="onLogout">注销</el-button>
+        <ButtonView v-if="!isLogin" class="border-black" @click="onLogin">
+          登录
+        </ButtonView>
+        <ButtonView
+          v-else
+          class="border-red-400 text-red-700"
+          @click="onLogout"
+        >
+          注销
+        </ButtonView>
       </article>
     </header>
     <main id="main" class="flex-1 overflow-auto">

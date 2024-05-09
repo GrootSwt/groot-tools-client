@@ -11,6 +11,7 @@ import {
   WSOperationTypeEnum,
 } from "@/api/model";
 import { useWebSocket } from "@/assets/hooks";
+import ButtonView from "@/components/ButtonView.vue";
 
 const needReConnect = ref(true);
 
@@ -300,13 +301,13 @@ function downloadFile(content: IMemorandum) {
           @keyup.ctrl.enter="sendMessage()"
         />
         <div class="ml-1">
-          <button
+          <ButtonView
             :disabled="disabledSend"
-            class="bg-gray-500 rounded-xl text-white p-2 h-full disabled:text-gray-300"
+            class="bg-gray-500 text-white h-full disabled:text-gray-300"
             @click="sendMessage()"
           >
             发送
-          </button>
+          </ButtonView>
         </div>
       </section>
     </footer>
