@@ -110,11 +110,12 @@ export function compressImage(
                 targetHeight,
                 quality
               );
-              quality = quality - 0.1;
+              quality = +(quality - 0.1).toFixed(2);
               if (quality <= 0) {
                 reject("file is too large");
                 return;
               }
+              console.log(newFile?.size);
             } while (newFile && newFile.size / 1024 > maxSize);
             if (newFile) {
               resolve(newFile);
@@ -148,15 +149,15 @@ function getCompressImage(
   const ctx = canvas.getContext("2d");
   if (ctx) {
     ctx.drawImage(image, 0, 0, width, height);
-    const base64 = canvas.toDataURL("image/png", quality);
+    const base64 = canvas.toDataURL("image/jpeg", quality);
     const bytes = window.atob(base64.split(",")[1]);
     const buffer = new ArrayBuffer(bytes.length);
     const array = new Uint8Array(buffer);
     for (let i = 0; i < bytes.length; i++) {
       array[i] = bytes.charCodeAt(i);
     }
-    const blob = new Blob([buffer], { type: "image/png" });
-    const newFile = new File([blob], `${name}_thumbnail.png`, {
+    const blob = new Blob([buffer], { type: "image/jpeg" });
+    const newFile = new File([blob], `${name}_thumbnail.jpeg`, {
       type: blob.type,
     });
     return newFile;
