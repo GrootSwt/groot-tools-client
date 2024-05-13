@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ElMessage } from "element-plus";
+import { ElMessage, MessageHandler } from "element-plus";
 import { copyToClipboard } from "@/assets/tools";
 import ButtonView from "@/components/ButtonView.vue";
 
@@ -12,6 +12,8 @@ watch(
   }
 );
 const jsonValue = ref<string>();
+
+let messageHandler: MessageHandler;
 
 function js_to_json(value?: string) {
   if (value) {
@@ -30,14 +32,13 @@ function js_to_json(value?: string) {
       value = value.endsWith(",")
         ? value.substring(0, value.length - 1)
         : value;
-      console.log(value);
       value = JSON.parse(value);
-      console.log("v: ", value);
       value = JSON.stringify(value, undefined, 2);
       jsonValue.value = value;
     } catch (error) {
       console.error(error);
-      ElMessage.error("JS对象结构不正确");
+      messageHandler && messageHandler.close();
+      messageHandler = ElMessage.error("JS对象结构不正确");
       jsonValue.value = "";
     }
   } else {
