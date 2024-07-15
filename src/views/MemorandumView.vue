@@ -56,7 +56,7 @@ function onWSMessage(response: IWSResponse<IResponseData>) {
 }
 
 const getMessageHTML = (value: string) => {
-  const linkRule = /\[.+\]\(http(s)?:\/\/([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)*\)/g;
+  const linkRule = /\[.+\]\(http(s)?:\/\/.+/g;
   const links = value.match(linkRule);
   if (links) {
     for (let i = 0; i < links.length; i++) {
